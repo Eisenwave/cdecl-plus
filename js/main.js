@@ -55,12 +55,12 @@ const Type = {
 }
 
 const SPECIFIER_CONFLICTS = [
-    ['class', 'struct', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()'],
-    ['class', 'struct', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()'],
-    ['class', 'struct', 'enum', 'char', 'short', 'long',],
-    ['class', 'struct', 'void', 'complex', '_Atomic()'],
-    ['class', 'struct', 'enum', 'signed', 'unsigned', 'float', 'double', 'void', '_Atomic()'],
-    ['class', 'struct', 'enum', 'signed', 'unsigned', 'complex'],
+    ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()'],
+    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()'],
+    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long',],
+    ['class', 'struct', 'union', 'enum', 'void', 'complex', '_Atomic()'],
+    ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'float', 'double', 'void', '_Atomic()'],
+    ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'complex'],
     ['int', 'complex'],
     ['char', 'short', 'short', 'void', 'bool', 'complex'],
     ['int', 'float', 'double', 'void', '_Atomic()'],
@@ -72,7 +72,7 @@ const SPECIFIER_CONFLICTS = [
 const EXPLICIT_TYPE_SPECIFIERS = new Set([
     'void', 'char', 'int', 'bool',
     'float', 'double',
-    'struct', 'class', 'enum',
+    'struct', 'class', 'union', 'enum',
     '_Atomic()', 'typedef-name']);
 
 const SPECIFIER_ORDERING = [
