@@ -102,7 +102,7 @@ function checkForDuplicates(specifierHistogram) {
             if (val > 2) {
                 throw {message: 'long long long is too long'};
             }
-            if (val > 1 && (specifierHistogram.get('double') !== 0 || specifierHistogram.get('complex') !== 0)) {
+            if (val > 1 && (specifierHistogram.get('double') > 0 || specifierHistogram.get('complex') > 0)) {
                 throw {message: 'long long is not compatible with double and/or complex'}
             }
         } else if (val > 1) {
