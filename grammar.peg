@@ -1,0 +1,344 @@
+{
+  function reduceRightRecursion(head, tail) {
+    tail = tail.map(e => e[e.length - 1]) ?? [];
+    return [head, ...tail];
+  };
+  
+  const Type = {
+    INT: 'i',
+    UINT: 'u',
+    LONG: 'l',
+    ULONG: 'ul',
+    LONG_LONG: 'll',
+    ULONG_LONG: 'ull',
+  };
+}
+
+Declaration "declaration"
+  = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList _ ";"? {
+    return {specifiers: declSpecs, declarators: list};
+  }
+
+DeclarationSpecifiers "declaration-specifier-list"
+  = head:DeclarationSpecifier tail:(__ DeclarationSpecifier)* {
+    return reduceRightRecursion(head, tail);
+  }
+
+DeclarationSpecifier "declaration-specifier"
+  = StorageClassSpecifier
+  / TypeSpecifier
+  / TypeQualifier
+  / FunctionSpecifier
+
+InitDeclaratorList "init-declarator-list"
+  = head:Declarator tail:(Comma Declarator)* {
+    return reduceRightRecursion(head, tail);
+  }
+  / it:AbstractDeclarator? {
+    return it ? [it] : [[]];
+  }
+
+StorageClassSpecifier "storage-class-specifier"
+  = it:("typedef"
+  / "extern"
+  / "static"
+  / ThreadLocalKeyword
+  / "auto"
+  / "register") !WordChar {
+    return ["storage-class-specifier", it];
+  }
+
+TypeSpecifier "type-specifier"
+  = it:("void" / "char" / "short" / "int" / "long" / "float" / "double" / "signed" / "unsigned" / ComplexKeyword / BoolKeyword) !WordChar
+  { return ["type-specifier", it]; }
+  / AtomicTypeSpecifier
+  / StructOrUnionSpecifier
+  / EnumSpecifier
+  / TypedefName
+
+StructOrUnionSpecifier "struct-or-union-specifier"
+  =  kind:$("struct" / "union" / "class") __ id:Identifier !WordChar {
+    return ["struct-or-union-specifier", kind, id];
+  }
+
+EnumSpecifier "enum-specifier"
+  = "enum" __ id:Identifier !WordChar {
+      return ["enum-specifier", id];
+  }
+
+AtomicTypeSpecifier "atomic-type-specifier"
+  = AtomicKeyword _ "(" _ name:TypeName _ ")" {
+    return ["atomic-type-specifier", name];
+  }
+
+TypeQualifier "type-qualifier"
+  = it:("const" / "restrict" / "volatile" / AtomicKeyword) !WordChar {
+    return ["type-qualifier", it];
+  }
+
+FunctionSpecifier "function-specifier"
+  = it:("inline" / NoreturnKeyword) !WordChar {
+    return ["function-specifier", it];
+  }
+
+Declarator "declarator"
+  = ptr:XPrefix? _ decl:DirectDeclarator {
+    return decl.concat(ptr ?? []);
+  }
+
+DirectDeclarator "direct-declarator"
+  = id:Identifier postfix:XPostfix* {
+    return [{typ: "id", id: id}, ...(postfix ?? [])];
+  }
+  / _ "(" _ decl:Declarator _ ")" _ tail:XPostfix* {
+    return decl.concat(tail ?? []);
+  }
+
+XPostfix "x-postfix"
+  = _ "[" _ qual:TypeQualifierList size:(__ IntegerConstant)? _ "]" _ {
+    const q = qual.map(e => e[1]);
+    const s = size ? size[1] : null;
+    return {typ: "[]", statik: false, qualifiers: q, size: s};
+  }
+  / _ "[" _  size:IntegerConstant? _ "]" _ {
+    return {typ: "[]", statik: false, qualifiers: [], size: size};
+  }
+  / _ "[" _ statik:("static" __) qual:(TypeQualifierList __)? size:IntegerConstant _ "]" _ {
+    const q = (qual ? qual[0] : []).map(e => e[1]);
+    return {typ: "[]", statik: true, qualifiers: q, size: size};
+  }
+  / _ "[" _ qual:TypeQualifierList __ statik:("static" __) size:IntegerConstant _ "]" _ {
+    const q = (qual ?? []).map(e => e[1]);
+    return {typ: "[]", statik: true, qualifiers: q, size: size};
+  }
+  / _ "[" _ qual:TypeQualifierList? _ "*" _ "]" _ {
+    return {typ: "[*]", qualifiers: (qual ?? []).map(e => e[1])};
+  }
+  / _ "(" _ params:ParameterTypeList? _ ")" _ {
+    return {typ: "()", params: params ?? []};
+  }
+
+AbstractDeclarator "abstract-declarator"
+  = ptr:XPrefix? _ decl:DirectAbstractDeclarator {
+    return decl.concat(ptr ?? []);
+  }
+  / XPrefix
+
+DirectAbstractDeclarator "direct-abstract-declarator"
+  = pre:XDirectAbstractDeclaratorPrefix? postfix:XPostfix+ {
+    return (pre ?? []).concat(postfix);
+  }
+  / pre:XDirectAbstractDeclaratorPrefix {
+    return pre;
+  }
+
+XDirectAbstractDeclaratorPrefix "x-direct-abstract-declarator-prefix"
+  = _ "(" _ decl:AbstractDeclarator _ ")" _ {
+    return decl;
+  }
+
+XPrefix "x-prefix"
+  = list:(Pointer / XReferenceItem)+ {
+    return [].concat(...list.reverse());
+  }
+
+Pointer "pointer"
+  = head:XPointerItem+  {
+    return head.map(e => ({typ: '*', qualifiers: e})).reverse();
+  }
+
+XPointerItem "x-pointer-item"
+  = _ "*" _ list:TypeQualifierList? {
+    return (list ?? []).map(e => e[1]);
+  }
+
+XReferenceItem "x-reference-item"
+  = _ it:("&&" / "&") _ {
+    return {typ: it};
+  }
+
+TypeQualifierList "type-qualifier-list"
+  = head:TypeQualifier tail:(__ TypeQualifier)* {
+    return reduceRightRecursion(head, tail);
+  }
+
+ParameterTypeList "parameter-type-list"
+  = head:ParameterList ellipsis:(_ ","? _ "..." _)? {
+    return head.concat(ellipsis ? [{typ: "..."}] : []);
+  }
+  / _ "..." _ {
+    return [{typ: "..."}];
+  }
+
+ParameterList "parameter-list"
+  = head:ParameterDeclaration tail:(Comma ParameterDeclaration)* {
+    return reduceRightRecursion(head, tail);
+  }
+
+ParameterDeclaration "parameter-declaration"
+  = spec:DeclarationSpecifiers _ decl:(Declarator / AbstractDeclarator)? {
+    return {typ: "decl", specifiers: spec, declarator: decl ?? []};
+  }
+
+TypeName "type-name"
+  = list:SpecifierQualifierList _ decl:AbstractDeclarator? {
+    return {specifiers: list, declarator: decl ?? []};
+  }
+
+TypedefName "typedef-name"
+  = id:KnownAlias !WordChar {
+    return ["typedef-name", id];
+  }
+
+SpecifierQualifierList "specifier-qualifier-list"
+  = head:(TypeSpecifier / TypeQualifier) tail:(__ (TypeSpecifier / TypeQualifier))* {
+    return reduceRightRecursion(head, tail);
+  }
+
+// LEXICAL ELEMENTS
+
+Identifier "identifier"
+  = !(Keyword !WordChar) [a-zA-Z_][a-zA-Z0-9]* {
+      return text();
+  }
+
+IntegerConstant "integer-constant"
+  = value:(BinaryConstant / OctalConstant / DecimalConstant / HexadecimalConstant) typ:IntegerSuffix? {
+    return {base: value[0], value: value[1], typ: typ ?? Type.INT};
+  }
+
+BinaryConstant "binary-constant"
+  = "0b" digits:$[01]+ {
+    return [2, Number.parseInt(digits, 2)];
+  }
+
+OctalConstant "octal-constant"
+  = "0"+ digits:$[0-7]+ {
+    return [8, Number.parseInt(digits, 8)];
+  }
+
+DecimalConstant "decimal-constant"
+  = [1-9][0-9]* {
+    return [10, Number.parseInt(text(), 10)];
+  }
+
+HexadecimalConstant "hexadecimal-constant"
+  = "0"[xX] digits:$[0-9a-fA-F]+ {
+    return [16, Number.parseInt(digits, 16)];
+  }
+
+IntegerSuffix "integer-suffix"
+  = ([uU][lL]?[lL]? / [lL]?[lL]?[uU]?) {
+    const res = text().toLowerCase();
+    return res.startsWith('u') || res.endsWith('u') ?
+       [Type.UINT, Type.ULONG, Type.ULONG_LONG][res.length - 1] :
+       [Type.INT, Type.LONG, Type.LONG_LONG][res.length];
+  }
+
+Keyword "keyword"
+  = "auto"
+  / "break"
+  / "case"
+  / "char"
+  / "const"
+  / "continue"
+  / "default"
+  / "do"
+  / "double"
+  / "else"
+  / "enum"
+  / "extern"
+  / "float"
+  / "for"
+  / "goto"
+  / "if"
+  / "inline"
+  / "int"
+  / "long"
+  / "register"
+  / "restrict"
+  / "return"
+  / "short"
+  / "signed"
+  / "sizeof"
+  / "static"
+  / "struct"
+  / "switch"
+  / "typedef"
+  / "union"
+  / "unsigned"
+  / "void"
+  / "volatile"
+  / "while"
+  / AlignasKeyword
+  / AlignofKeyword
+  / AtomicKeyword
+  / BoolKeyword
+  / ComplexKeyword
+  / GenericKeyword
+  / ImaginaryKeyword
+  / NoreturnKeyword
+  / StaticAssertKeyword
+  / ThreadLocalKeyword
+
+KnownAlias
+  = "size_t"
+  / "intptr_t"
+  / "uintptr_t"
+  / "ptrdiff_t"
+  / "nullptr_t"
+  / "int8_t"
+  / "int16_t"
+  / "int32_t"
+  / "int64_t"
+  / "intmax_t"
+  / "uint8_t"
+  / "uint16_t"
+  / "uint32_t"
+  / "uint64_t"
+  / "uintmax_t"
+  / "FILE"
+
+AlignasKeyword
+  = ("_Alignas" / "alignas") { return "alignas"; }
+
+AlignofKeyword
+  = ("_Alignof" / "alignof") { return "alignof"; }
+
+AtomicKeyword
+  = "_Atomic"
+
+BoolKeyword
+  = ("_Bool" / "bool") { return "bool"; }
+
+ComplexKeyword
+  = ("_Complex" / "complex") { return "complex"; }
+
+GenericKeyword
+  = "_Generic"
+
+ImaginaryKeyword
+  = ("_Imaginary" / "imaginary") { return "imaginary"; }
+
+NoreturnKeyword
+  = "_Noreturn"
+
+StaticAssertKeyword
+  = ("_Static_assert" / "static_assert") { return "static_assert"; }
+
+ThreadLocalKeyword
+  = ("_Thread_local" / "thread_local") { return "thread_local"; }
+
+// WHITESPACE AND SEPARATORS
+
+WordChar
+  = [a-zA-Z0-9_]
+
+Comma "comma"
+  = _ "," _
+
+_ "whitespace"
+  = ' '?
+
+__ "mandatory-whitespace"
+  = ' '

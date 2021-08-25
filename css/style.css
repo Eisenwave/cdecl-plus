@@ -1,0 +1,109 @@
+html {
+    height: 100%;
+    background: linear-gradient(to bottom, #333 10em, #333 15em, #282828 16em, #282828);
+}
+
+body {
+    color: #eee;
+    font-family: 'Noto Sans Mono', monospace;
+    font-variant-ligatures: none;
+    margin: 0;
+}
+
+main {
+    margin: auto 10%;
+}
+
+h1 {
+    font-size: 400%;
+    color: #ffb6c1;
+    width: fit-content;
+    margin-bottom: 0;
+}
+
+@supports (background-clip: text) {
+    h1 {
+        color: transparent !important;
+        background: linear-gradient(to top right, #e07373, #ffb6c1);
+        background-clip: text;
+    }
+}
+
+@supports (-webkit-background-clip: text) {
+    h1 {
+        color: transparent !important;
+        background: linear-gradient(to top right, #e07373, #ffb6c1);
+
+        -webkit-background-clip: text;
+    }
+}
+
+@supports (-ms-background-clip: text) {
+    h1 {
+        color: transparent !important;
+        background: linear-gradient(to top right, #e07373, #ffb6c1);
+        -ms-background-clip: text;
+    }
+}
+
+@supports (-o-background-clip: text) {
+    h1 {
+        color: transparent !important;
+        background: linear-gradient(to top right, #e07373, #ffb6c1);
+        -o-background-clip: text;
+    }
+}
+
+h2 {
+    color: #d68c98;
+
+    margin-top: .5em;
+    margin-bottom: 2em;
+}
+
+input {
+    color: #eee;
+    font-size: 125%;
+    font-family: inherit;
+    font-variant-ligatures: inherit;
+    font-weight: bold;
+
+    background-color: #222;
+    border: 0.2em solid gray;
+    border-radius: 0.25em;
+
+    padding: 8px;
+    width: 100%;
+}
+
+input:focus {
+    outline: none;
+    border-color: #bc989b;
+}
+
+.error {
+    border-color: #cc3333 !important;
+}
+
+#output {
+    padding-top: 2em;
+
+    font-size: 125%;
+}
+
+#debug-output {
+    padding-top: 1em;
+    white-space: pre;
+    opacity: 50%;
+    font-size: 100%;
+}
+
+#author {
+    position: absolute;
+    right: 1em;
+    bottom: 1em;
+}
+
+a, a:visited {
+    color: #ffb6c1;
+}
