@@ -98,6 +98,12 @@ input:focus {
     font-size: 100%;
 }
 
+#source {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+}
+
 #author {
     position: absolute;
     right: 1em;
