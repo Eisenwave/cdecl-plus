@@ -90,11 +90,41 @@ Declarator "declarator"
   }
 
 DirectDeclarator "direct-declarator"
-  = id:Identifier postfix:XPostfix* {
-    return [{typ: "id", id: id}, ...(postfix ?? [])];
+  = scoped:XScopedDeclarator _ postfix:XPostfix* {
+    return scoped.concat(postfix ?? []);
   }
-  / _ "(" _ decl:Declarator _ ")" _ tail:XPostfix* {
-    return decl.concat(tail ?? []);
+
+XScopedDeclarator "x-scoped-declarator"
+  = scope:XScope? _ id:Identifier !(_ "::") {
+    return [{typ: "id", id: id}].concat(scope ?? []);
+  }
+  / scope:XScope _ decl:Declarator {
+    return decl.concat(scope);
+  }
+  / _ "(" _ decl:Declarator _ ")" {
+    return decl;
+  }
+
+AbstractDeclarator "abstract-declarator"
+  = ptr:XPrefix? _ decl:DirectAbstractDeclarator {
+    return decl.concat(ptr ?? []);
+  }
+  / XPrefix
+
+DirectAbstractDeclarator "direct-abstract-declarator"
+  = pre:XScopedAbstractDeclarator? postfix:XPostfix+ {
+    return (pre ?? []).concat(postfix);
+  }
+  / pre:XScopedAbstractDeclarator {
+    return pre;
+  }
+
+XScopedAbstractDeclarator "x-scoped-abstract-declarator"
+  = scope:XScope _ decl:AbstractDeclarator {
+    return decl.concat(scope);
+  }
+  / _ "(" _ decl:AbstractDeclarator _ ")" _ {
+    return decl;
   }
 
 XPostfix "x-postfix"
@@ -121,23 +151,12 @@ XPostfix "x-postfix"
     return {typ: "()", params: params ?? []};
   }
 
-AbstractDeclarator "abstract-declarator"
-  = ptr:XPrefix? _ decl:DirectAbstractDeclarator {
-    return decl.concat(ptr ?? []);
-  }
-  / XPrefix
-
-DirectAbstractDeclarator "direct-abstract-declarator"
-  = pre:XDirectAbstractDeclaratorPrefix? postfix:XPostfix+ {
-    return (pre ?? []).concat(postfix);
-  }
-  / pre:XDirectAbstractDeclaratorPrefix {
-    return pre;
-  }
-
-XDirectAbstractDeclaratorPrefix "x-direct-abstract-declarator-prefix"
-  = _ "(" _ decl:AbstractDeclarator _ ")" _ {
-    return decl;
+XScope "x-scope"
+  = head:Identifier? _ "::" tail:(_ Identifier "::")* !(_ "(") {
+    return [{typ: "::", id: head}].concat(tail
+        .map(e => e[1])
+        .map(e => ({typ: "::", id: e})))
+        .reverse();
   }
 
 XPrefix "x-prefix"

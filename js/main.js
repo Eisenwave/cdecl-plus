@@ -203,32 +203,41 @@ function declaratorToProse(decl, isParameter) {
     let i = 0;
     for (const d of decl) {
         switch (d.typ) {
-            case 'id':
+            case 'id': {
                 if (isParameter) {
                     trailingIdentifier = ' named ' + d.id;
                 } else {
                     leadingIdentifier = ' ' + d.id + ' as';
                 }
                 break;
-            case '*':
+            }
+            case '::': {
+                const ns = d.id ?? 'global namespace';
+                result += ` member${pluralS} of ${ns} which is`;
+                break;
+            }
+            case '*': {
                 const q = d.qualifiers.sort(compareSpecifiers).map(remapSpecifierTextForReadability).join(' ');
                 result += ` ${q} pointer${pluralS} to`;
                 pluralS = '';
                 break;
-            case '&':
+            }
+            case '&': {
                 if (i !== 0 && ['&', '&&'].includes(decl[i - 1].typ)) {
                     throw {message: 'Reference to reference is not allowed'};
                 }
                 result += ` reference${pluralS} to`;
                 pluralS = '';
                 break;
-            case '&&':
+            }
+            case '&&': {
                 if (i !== 0 && ['&', '&&'].includes(decl[i - 1].typ)) {
                     throw {message: 'Reference to reference is not allowed'};
                 }
                 result += ` rvalue-reference${pluralS} to`;
                 pluralS = '';
                 break;
+            }
             case '[*]': {
                 if (!isParameter || i > 1 || i === 1 && decl[0].typ !== 'id') {
                     throw {message: 'VLA of unspecified size may only appear in function parameters'};
