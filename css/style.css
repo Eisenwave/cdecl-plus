@@ -1,11 +1,11 @@
 html {
     height: 100%;
-    background: linear-gradient(to bottom, #333 10em, #333 15em, #282828 16em, #282828);
+    background: linear-gradient(to bottom, #333 10em, #333 15em, #282828 17em, #282828);
 }
 
 body {
     color: #eee;
-    font-family: 'Noto Sans Mono', monospace;
+    font-family: 'DejaVu Sans Mono', monospace;
     font-variant-ligatures: none;
     margin: 0;
 }

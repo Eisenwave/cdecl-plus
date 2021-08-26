@@ -1,4 +1,40 @@
 @font-face {
+    font-family: 'DejaVu Sans Mono';
+    src: url('../fonts/DejaVuSansMono-BoldOblique.woff2') format('woff2'),
+    url('../fonts/DejaVuSansMono-BoldOblique.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DejaVu Sans Mono';
+    src: url('../fonts/DejaVuSansMono-Bold.woff2') format('woff2'),
+    url('../fonts/DejaVuSansMono-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DejaVu Sans Mono';
+    src: url('../fonts/DejaVuSansMono-Oblique.woff2') format('woff2'),
+    url('../fonts/DejaVuSansMono-Oblique.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DejaVu Sans Mono';
+    src: url('../fonts/DejaVuSansMono.woff2') format('woff2'),
+    url('../fonts/DejaVuSansMono.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'Noto Sans';
     font-style: normal;
     font-weight: 400;
