@@ -213,7 +213,7 @@ function declaratorToProse(decl, isParameter) {
             }
             case '::': {
                 const ns = d.id ?? 'global namespace';
-                result += ` member${pluralS} of ${ns} which is`;
+                result += ` member${pluralS} of ${ns}, with type`;
                 break;
             }
             case '*': {
