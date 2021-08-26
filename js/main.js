@@ -66,7 +66,7 @@ const SPECIFIER_CONFLICTS = [
     ['int', 'float', 'double', 'void', '_Atomic()'],
     ['char', 'short', 'float', 'double', 'void', '_Atomic()'],
     ['typedef', 'register', 'auto', 'extern', 'static', 'thread_local'],
-    ['atomic', 'void']
+    ['_Atomic', 'void']
 ];
 
 const EXPLICIT_TYPE_SPECIFIERS = new Set([
@@ -75,10 +75,22 @@ const EXPLICIT_TYPE_SPECIFIERS = new Set([
     'struct', 'class', 'union', 'enum',
     '_Atomic()', 'typedef-name']);
 
+const OUTER_SPECIFIER_TYPES = new Set([
+    'storage-class-specifier',
+    'function-specifier'
+]);
+const INNER_SPECIFIER_TYPES = new Set([
+    'type-specifier',
+    'type-qualifier',
+    'struct-or-union-specifier',
+    'enum-specifier',
+    'typedef-name'
+]);
+
 const SPECIFIER_ORDERING = [
-    'typedef', 'extern', 'static', 'thread_local', 'auto', 'register',
-    'const', 'volatile', 'restrict',
-    'atomic', '_Atomic()', 'struct', 'class', 'enum', 'void', 'char', 'short', 'long', 'int', 'float', 'double'
+    'typedef', 'extern', 'static', 'thread_local', 'auto', 'register', 'inline',
+    'const', 'volatile', 'restrict', '_Atomic',
+    '_Atomic()', 'struct', 'class', 'enum', 'void', 'bool', 'char', 'short', 'long', 'int', 'float', 'double'
 ];
 
 
@@ -136,18 +148,6 @@ function compareSpecifiers(a, b) {
     return SPECIFIER_ORDERING.indexOf(a) - SPECIFIER_ORDERING.indexOf(b);
 }
 
-const OUTER_SPECIFIER_TYPES = new Set([
-    'storage-class-specifier',
-    'function-specifier'
-]);
-const INNER_SPECIFIER_TYPES = new Set([
-    'type-specifier',
-    'type-qualifier',
-    'struct-or-union-specifier',
-    'enum-specifier',
-    'typedef-name'
-]);
-
 function specifiersToProse(specifiers, isParameter) {
     const specifiersText = specifiers
         .map(s => s[0] === 'atomic-type-specifier' ? '_Atomic()' : s[0] === 'typedef-name' ? 'typedef-name' : s[1]);
@@ -164,7 +164,7 @@ function specifiersToProse(specifiers, isParameter) {
     }
     const atomicSpecifier = specifiers.filter(s => s[0] === 'atomic-type-specifier')[0];
     let atomicProse = atomicSpecifier !== undefined ?
-        'atomic ' + declarationToProse(atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, true) : '';
+        '_Atomic ' + declarationToProse(atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, true) : '';
 
     return {
         outer: processedSpecifiersToText(specifiers.filter(s => OUTER_SPECIFIER_TYPES.has(s[0]))),
@@ -176,10 +176,20 @@ function specifiersToProse(specifiers, isParameter) {
 function processedSpecifiersToText(specifiers) {
     return specifiers
         .sort((a, b) => compareSpecifiers(a[1], b[1]))
-        .map(s => s[0] === 'struct-or-union-specifier' || s[0] === 'enum-specifier' ? s[1] + ' ' + s[2] : s[1])
-        .map(s => s === 'typedef' ? 'type alias for' : s)
-        .map(s => s === '_Atomic' ? 'atomic' : s)
+        .map(specifierToText)
         .join(' ');
+}
+
+function specifierToText(specifier) {
+    const text = specifier[0] === 'struct-or-union-specifier' || specifier[0] === 'enum-specifier'
+        ? specifier[1] + ' ' + specifier[2] : specifier[1];
+    return remapSpecifierTextForReadability(text);
+}
+
+function remapSpecifierTextForReadability(text) {
+    return text === 'typedef' ? 'type alias for'
+        : text === '_Atomic' ? 'atomic'
+            : text;
 }
 
 function declaratorToProse(decl, isParameter) {
@@ -198,7 +208,7 @@ function declaratorToProse(decl, isParameter) {
                 }
                 break;
             case '*':
-                const q = d.qualifiers.sort(compareSpecifiers).join(' ');
+                const q = d.qualifiers.sort(compareSpecifiers).map(remapSpecifierTextForReadability).join(' ');
                 result += ` ${q} pointer${pluralS} to`;
                 pluralS = '';
                 break;
