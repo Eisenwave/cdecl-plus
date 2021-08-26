@@ -152,7 +152,7 @@ XPostfix "x-postfix"
   }
 
 XScope "x-scope"
-  = head:Identifier? _ "::" tail:(_ Identifier "::")* !(_ "(") {
+  = head:Identifier? _ "::" tail:(_ Identifier "::")* !(_ ("(" / "[")) {
     return [{typ: "::", id: head}].concat(tail
         .map(e => e[1])
         .map(e => ({typ: "::", id: e})))

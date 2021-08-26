@@ -2535,6 +2535,15 @@ function peg$parse(input, options) {
                 s8 = peg$FAILED;
                 if (peg$silentFails === 0) { peg$fail(peg$c60); }
               }
+              if (s8 === peg$FAILED) {
+                if (input.charCodeAt(peg$currPos) === 91) {
+                  s8 = peg$c92;
+                  peg$currPos++;
+                } else {
+                  s8 = peg$FAILED;
+                  if (peg$silentFails === 0) { peg$fail(peg$c93); }
+                }
+              }
               if (s8 !== peg$FAILED) {
                 s7 = [s7, s8];
                 s6 = s7;
