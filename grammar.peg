@@ -57,8 +57,11 @@ TypeSpecifier "type-specifier"
   / TypedefName
 
 StructOrUnionSpecifier "struct-or-union-specifier"
-  =  kind:$("struct" / "union" / "class") __ id:Identifier !WordChar {
+  =  kind:$("struct" / "union" / "class") __ id:Identifier !WordChar (_ "{" _ "}")? {
     return ["struct-or-union-specifier", kind, id];
+  }
+  / kind:$("struct" / "union" / "class") _ "{" _ "}" {
+    return ["struct-or-union-specifier", kind];
   }
 
 EnumSpecifier "enum-specifier"

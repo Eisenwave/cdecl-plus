@@ -128,10 +128,11 @@ function checkForMisuse(specifiers, isParameter) {
         return;
     }
     for (const s of specifiers) {
-        if (s[0] === 'storage-class-specifier') {
-            throw {message: 'Storage class specifier ' + s[1] + ' is not allowed in function parameters'};
-        } else if (s[0] === 'function-specifier') {
-            throw {message: 'Function specifier ' + s[1] + ' is not allowed in function parameters'};
+        switch (s[0]) {
+            case 'storage-class-specifier':
+                throw {message: 'Storage class specifier ' + s[1] + ' is not allowed in function parameters'};
+            case 'function-specifier':
+                throw {message: 'Function specifier ' + s[1] + ' is not allowed in function parameters'};
         }
     }
 }
@@ -164,7 +165,7 @@ function specifiersToProse(specifiers, isParameter) {
     }
     const atomicSpecifier = specifiers.filter(s => s[0] === 'atomic-type-specifier')[0];
     let atomicProse = atomicSpecifier !== undefined ?
-        '_Atomic ' + declarationToProse(atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, true) : '';
+        'atomic ' + declarationToProse(atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, true) : '';
 
     return {
         outer: processedSpecifiersToText(specifiers.filter(s => OUTER_SPECIFIER_TYPES.has(s[0]))),
@@ -181,8 +182,10 @@ function processedSpecifiersToText(specifiers) {
 }
 
 function specifierToText(specifier) {
-    const text = specifier[0] === 'struct-or-union-specifier' || specifier[0] === 'enum-specifier'
-        ? specifier[1] + ' ' + specifier[2] : specifier[1];
+    let text = specifier[1];
+    if (specifier[0] === 'struct-or-union-specifier' || specifier[0] === 'enum-specifier') {
+        text = specifier.length > 2 ? text + ' ' + specifier[2] : 'anonymous ' + text;
+    }
     return remapSpecifierTextForReadability(text);
 }
 
@@ -255,7 +258,9 @@ function declaratorToProse(decl, isParameter) {
                         paramsProses.push(declarationToProse(p.specifiers, p.declarator, true));
                     }
                 }
-                result += ` function${pluralS}(${paramsProses.join(', ').trim()}) returning`;
+                const paramsText = paramsProses.join(', ').trim();
+                const parenthesizedParams = paramsText.length === 0 ? '' : `(${paramsText})`;
+                result += ` function${pluralS}${parenthesizedParams} returning`;
                 pluralS = '';
                 break;
             }
