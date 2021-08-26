@@ -63,7 +63,7 @@ h2 {
 
 input {
     color: #eee;
-    font-size: 125%;
+    font-size: 14pt;
     font-family: inherit;
     font-variant-ligatures: inherit;
     font-weight: bold;
@@ -88,7 +88,7 @@ input:focus {
 #output {
     padding-top: 2em;
 
-    font-size: 125%;
+    font-size: 14pt;
 }
 
 #debug-output {
