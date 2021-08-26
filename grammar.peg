@@ -198,7 +198,7 @@ SpecifierQualifierList "specifier-qualifier-list"
 // LEXICAL ELEMENTS
 
 Identifier "identifier"
-  = !(Keyword !WordChar) [a-zA-Z_][a-zA-Z0-9]* {
+  = !(Keyword !WordChar) [a-zA-Z_]WordChar* {
       return text();
   }
 
@@ -208,7 +208,7 @@ IntegerConstant "integer-constant"
   }
 
 BinaryConstant "binary-constant"
-  = "0b" digits:$[01]+ {
+  = "0"[bB] digits:$[01]+ {
     return [2, Number.parseInt(digits, 2)];
   }
 
