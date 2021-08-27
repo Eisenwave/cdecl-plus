@@ -53,7 +53,7 @@ function processAst(ast) {
         DEBUG_OUTPUT.innerText = JSON.stringify(ast, undefined, 4);
     } catch (e) {
         INPUT.className = 'error';
-        OUTPUT.innerText = 'Error: ' + e.message;
+        OUTPUT.innerText = 'Fatal Error: ' + e.message;
         DEBUG_OUTPUT.innerText = e instanceof TypeError ? JSON.stringify(ast, undefined, 4) : '';
     }
 }
