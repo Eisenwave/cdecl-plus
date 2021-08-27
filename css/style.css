@@ -85,6 +85,62 @@ input:focus {
     border-color: #cc3333 !important;
 }
 
+.d-error, .d-warning, .d-info {
+    padding: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.d-error {
+    background-color: rgba(255, 0, 0, .075);
+    border: 1px solid rgba(255, 0, 0, .35);
+}
+
+.d-warning {
+    background-color: rgba(255, 255, 0, .05);
+    border: 1px solid rgba(255, 255, 0, .25);
+}
+
+.d-info {
+    background-color: rgba(0, 144, 255, .075);
+    border: 1px solid rgba(0, 144, 255, .35);
+}
+
+.d-error-text::before, .d-warning-text::before, .d-info-text::before {
+    background-size: 1.25em 1.25em;
+    background-repeat: no-repeat;
+    padding-left: 2em;
+}
+
+.d-error-text::before {
+    content: 'Problem: ';
+    font-weight: bold;
+    background-image: url('../img/error.png');
+}
+
+.d-warning-text::before {
+    content: 'Warning: ';
+    font-weight: bold;
+    background-image: url('../img/warning.png');
+}
+
+.d-info-text::before {
+    content: 'Info: ';
+    font-weight: bold;
+    background-image: url('../img/info.png');
+}
+
+.icon {
+    display: inline;
+    position: relative;
+    top: 0.1em;
+    width: 1em;
+    height: 1em;
+}
+
+#diagnostics {
+    margin-top: 2em;
+}
+
 #output {
     padding-top: 2em;
 

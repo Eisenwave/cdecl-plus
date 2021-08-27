@@ -27,6 +27,10 @@ const EXPLICIT_TYPE_SPECIFIERS = new Set([
     'struct', 'class', 'union', 'enum',
     '_Atomic()', 'typedef-name']);
 
+const IDIOMATIC_IMPLICIT_INT_SPECIFIERS = new Set([
+    'short', 'long', 'signed', 'unsigned'
+]);
+
 const OUTER_SPECIFIER_TYPES = new Set([
     'storage-class-specifier',
     'function-specifier'
@@ -88,6 +92,12 @@ function specifiersToProse(specifiers, kind) {
     if (!specifiersText.some(s => EXPLICIT_TYPE_SPECIFIERS.has(s))) {
         const toAdd = histogram.has('complex') ? 'double' : 'int';
         specifiers.push(['type-specifier', toAdd]);
+        if (toAdd === 'double') {
+            showDiagnostic('implicit-double');
+        }
+        else if (toAdd === 'int' && !specifiersText.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
+            showDiagnostic('implicit-int');
+        }
     }
     const atomicSpecifier = specifiers.filter(s => s[0] === 'atomic-type-specifier')[0];
     let atomicProse = atomicSpecifier !== undefined ?
@@ -205,6 +215,7 @@ function declaratorToProse(decl, kind) {
     let trailingIdentifier = '';
     let i = 0;
     for (const d of decl) {
+        const isFirst = i === 0 || decl[i - 1] === 'id';
         switch (d.typ) {
             case 'id': {
                 if (isParameter) {
@@ -225,25 +236,26 @@ function declaratorToProse(decl, kind) {
                 pluralS = '';
                 break;
             }
-            case '&': {
-                if (i !== 0 && ['&', '&&'].includes(decl[i - 1].typ)) {
-                    throw {message: 'Reference to reference is not allowed'};
-                }
-                result += ` reference${pluralS} to`;
-                pluralS = '';
-                break;
-            }
+            case '&':
             case '&&': {
                 if (i !== 0 && ['&', '&&'].includes(decl[i - 1].typ)) {
                     throw {message: 'Reference to reference is not allowed'};
                 }
-                result += ` rvalue-reference${pluralS} to`;
+                if (i !== 0 && decl[i - 1].typ === '[]') {
+                    showDiagnostic('array-of-references');
+                }
+                if (i !== 0 && decl[i - 1].typ === '*') {
+                    showDiagnostic('pointer-to-reference');
+                }
+
+                const rvalue = d.typ === '&&' ? 'rvalue-' : '';
+                result += ` ${rvalue}reference${pluralS} to`;
                 pluralS = '';
                 break;
             }
             case '[*]': {
                 if (!isParameter || i > 1 || i === 1 && decl[0].typ !== 'id') {
-                    throw {message: 'VLA of unspecified size may only appear in function parameters'};
+                    showDiagnostic('non-parameter-vla');
                 }
                 const q = d.qualifiers.sort(compareSpecifiers).join(' ');
                 result += ` ${q} VLA${pluralS} of unspecified size of`;
@@ -252,8 +264,18 @@ function declaratorToProse(decl, kind) {
             }
             case '[]': {
                 if (!isParameter && d.qualifiers.length !== 0) {
-                    throw {message: 'Arrays with type qualifiers may only appear in function parameters'};
+                    showDiagnostic('qualified-array');
                 }
+                if (i !== 0 && decl[i - 1].typ === '()') {
+                    showDiagnostic('returning-array')
+                }
+                if (isParameter && isFirst) {
+                    showDiagnostic('array-to-pointer-decay');
+                }
+                if (isFirst && kind === 'atomic') {
+                    showDiagnostic('atomic-array');
+                }
+
                 const q = d.qualifiers.sort(compareSpecifiers).join(' ');
                 const statik = d.statik ? ' (size checked)' : '';
                 const size = d.size !== null ? `[${d.size.value}]` : '';
@@ -262,6 +284,19 @@ function declaratorToProse(decl, kind) {
                 break;
             }
             case '()': {
+                if (i !== 0 && decl[i - 1].typ === '()') {
+                    showDiagnostic('returning-function');
+                }
+                if (i !== 0 && decl[i - 1].typ === '[]') {
+                    showDiagnostic('array-of-functions');
+                }
+                if (isParameter && isFirst) {
+                    showDiagnostic('function-to-pointer-decay');
+                }
+                if (isFirst && kind === 'atomic') {
+                    showDiagnostic('atomic-function');
+                }
+
                 const paramsProses = [];
                 for (const p of d.params) {
                     if (p.typ === '...') {

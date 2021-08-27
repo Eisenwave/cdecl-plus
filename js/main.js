@@ -1,6 +1,7 @@
 const INPUT = document.getElementById("input");
 const OUTPUT = document.getElementById("output");
 const DEBUG_OUTPUT = document.getElementById("debug-output");
+const DIAGNOSTICS = document.getElementById("diagnostics");
 
 function parseInput(input) {
     updatePageQuery(input);
@@ -11,6 +12,8 @@ function parseInput(input) {
         DEBUG_OUTPUT.innerText = '';
         return;
     }
+    setDiagnosticsHidden();
+
     try {
         const ast = pegParse(input);
         processAst(ast);
@@ -55,6 +58,16 @@ function processAst(ast) {
     }
 }
 
+function setDiagnosticsHidden(hidden = true) {
+    for (const child of DIAGNOSTICS.children) {
+        child.hidden = hidden;
+    }
+}
+
+function showDiagnostic(id, shown = true) {
+    const element = document.getElementById('d-' + id);
+    element.hidden = !shown;
+}
 
 window.addEventListener('load', () => {
     const urlSearchParams = new URLSearchParams(window.location.search);

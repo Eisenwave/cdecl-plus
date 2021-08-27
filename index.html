@@ -20,6 +20,48 @@
     <h2>C Declarations &#10132; Prose</h2>
     <input id="input" autocomplete="off" spellcheck="false" autofocus oninput="parseInput(this.value)"/>
     <p id="output"></p>
+    <div id="diagnostics">
+        <div id="d-returning-array" class="d-error" hidden>
+            <span class="d-error-text">Return type may not be an array</span>
+        </div>
+        <div id="d-returning-function" class="d-error" hidden>
+            <span class="d-error-text">Return type may not be a function</span>
+        </div>
+        <div id="d-atomic-array" class="d-error" hidden>
+            <span class="d-error-text">Can not create atomic array</span>
+        </div>
+        <div id="d-atomic-function" class="d-error" hidden>
+            <span class="d-error-text">Can not create atomic function</span>
+        </div>
+        <div id="d-array-of-references" class="d-error" hidden>
+            <span class="d-error-text">Can not create array of references</span>
+        </div>
+        <div id="d-array-of-functions" class="d-error" hidden>
+            <span class="d-error-text">Can not create array of functions</span>
+        </div>
+        <div id="d-pointer-to-reference" class="d-error" hidden>
+            <span class="d-error-text">Can not create array of references</span>
+        </div>
+        <div id="d-qualified-array" class="d-error" hidden>
+            <span class="d-error-text">Arrays with type qualifiers may only appear in function parameters</span>
+        </div>
+        <div id="d-non-parameter-vla" class="d-error" hidden>
+            <span class="d-error-text">VLA of unspecified size may only appear in function parameters</span>
+        </div>
+        <div id="d-implicit-int" class="d-warning" hidden>
+            <span class="d-warning-text">Type is implicitly int</span>
+        </div>
+        <div id="d-implicit-double" class="d-warning" hidden>
+            <span class="d-warning-text">Implicit double type for complex specifier is non-standard</span>
+        </div>
+        <div id="d-array-to-pointer-decay" class="d-info" hidden>
+            <span class="d-info-text">Parameter of array type decays to pointer</span>
+        </div>
+        <div id="d-function-to-pointer-decay" class="d-info" hidden>
+            <span class="d-info-text">Parameter of function type decays to pointer to function</span>
+        </div>
+    </div>
+
     <p id="debug-output" hidden></p>
 </main>
 
