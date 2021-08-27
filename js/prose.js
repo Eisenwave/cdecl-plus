@@ -50,22 +50,22 @@ function astToProse(ast) {
         throw {message: 'Nothing declared'};
     }
 
-    const specifiersProse = specifiersToProse(ast.specifiers, false);
+    const specifiersProse = specifiersToProse(ast.specifiers, 'top-level');
 
     const declarationProses = [];
     for (const declarator of ast.declarators) {
-        declarationProses.push(declarationWithKnownSpecifiersToProse(specifiersProse, declarator, false));
+        declarationProses.push(declarationWithKnownSpecifiersToProse(specifiersProse, declarator, 'top-level'));
     }
 
     return declarationProses.join('\n\n').replace(/ +/g, ' ');
 }
 
-function declarationToProse(specifiers, declarator, isParameter) {
-    return declarationWithKnownSpecifiersToProse(specifiersToProse(specifiers, isParameter), declarator, isParameter);
+function declarationToProse(specifiers, declarator, kind) {
+    return declarationWithKnownSpecifiersToProse(specifiersToProse(specifiers, kind), declarator, kind);
 }
 
-function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, isParameter) {
-    const declaratorProse = declaratorToProse(declarator, isParameter);
+function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind) {
+    const declaratorProse = declaratorToProse(declarator, kind);
     let result = declaratorProse.leadingIdentifier.length ? 'Declare ' + declaratorProse.leadingIdentifier + ' ' : ' ';
     result += specifiersProse.outer + ' '
     result += declaratorProse.text + ' ';
@@ -75,13 +75,13 @@ function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, isPa
     return result.trim();
 }
 
-function specifiersToProse(specifiers, isParameter) {
+function specifiersToProse(specifiers, kind) {
     const specifiersText = specifiers
         .map(s => s[0] === 'atomic-type-specifier' ? '_Atomic()' : s[0] === 'typedef-name' ? 'typedef-name' : s[1]);
 
     const histogram = makeHistogram(specifiersText);
 
-    checkForMisuse(specifiers, isParameter);
+    checkForMisuse(specifiers, kind);
     checkForConflicts(specifiersText);
     checkForDuplicates(histogram);
 
@@ -91,7 +91,7 @@ function specifiersToProse(specifiers, isParameter) {
     }
     const atomicSpecifier = specifiers.filter(s => s[0] === 'atomic-type-specifier')[0];
     let atomicProse = atomicSpecifier !== undefined ?
-        'atomic ' + declarationToProse(atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, true) : '';
+        'atomic ' + declarationToProse(atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, 'atomic') : '';
 
     return {
         outer: processedSpecifiersToText(specifiers.filter(s => OUTER_SPECIFIER_TYPES.has(s[0]))),
@@ -137,17 +137,38 @@ function checkForDuplicates(specifierHistogram) {
     }
 }
 
-function checkForMisuse(specifiers, isParameter) {
-    if (!isParameter) {
-        return;
+function checkForMisuse(specifiers, kind) {
+    switch (kind) {
+        case 'top-level':
+            return;
+        case 'atomic':
+            specifiers.forEach(checkForSpecifierMisuseInAtomicTypeSpecifier);
+            break;
+        case 'parameter':
+            specifiers.forEach(checkForSpecifierMisuseInFunctionParameter);
+            break;
     }
-    for (const s of specifiers) {
-        switch (s[0]) {
-            case 'storage-class-specifier':
-                throw {message: 'Storage class specifier ' + s[1] + ' is not allowed in function parameters'};
-            case 'function-specifier':
-                throw {message: 'Function specifier ' + s[1] + ' is not allowed in function parameters'};
-        }
+}
+
+function checkForSpecifierMisuseInAtomicTypeSpecifier(s) {
+    switch (s[0]) {
+        case 'storage-class-specifier':
+            throw {message: 'Storage class specifier ' + s[1] + ' is not allowed in atomic type specifier'};
+        case 'function-specifier':
+            throw {message: 'Function specifier ' + s[1] + ' is not allowed in atomic type specifier'};
+        case 'type-qualifier':
+            throw {message: '_Atomic() type specifier of ' + s[1] + ' qualified type is not allowed'};
+        case 'atomic-type-specifier':
+            throw {message: 'Nested _Atomic() type specifier is not allowed'}
+    }
+}
+
+function checkForSpecifierMisuseInFunctionParameter(s) {
+    switch (s[0]) {
+        case 'storage-class-specifier':
+            throw {message: 'Storage class specifier ' + s[1] + ' is not allowed in function parameters'};
+        case 'function-specifier':
+            throw {message: 'Function specifier ' + s[1] + ' is not allowed in function parameters'};
     }
 }
 
@@ -176,7 +197,8 @@ function remapSpecifierTextForReadability(text) {
             : text;
 }
 
-function declaratorToProse(decl, isParameter) {
+function declaratorToProse(decl, kind) {
+    const isParameter = kind === 'parameter';
     let result = '';
     let pluralS = '';
     let leadingIdentifier = '';
@@ -245,7 +267,7 @@ function declaratorToProse(decl, isParameter) {
                     if (p.typ === '...') {
                         paramsProses.push('ellipsis parameter');
                     } else {
-                        paramsProses.push(declarationToProse(p.specifiers, p.declarator, true));
+                        paramsProses.push(declarationToProse(p.specifiers, p.declarator, 'parameter'));
                     }
                 }
                 const paramsText = paramsProses.join(', ').trim();

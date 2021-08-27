@@ -87,7 +87,7 @@ TypeQualifier "type-qualifier"
     return ["type-qualifier", it];
   }
   / it:AtomicKeyword !(_ "(" / WordChar) {
-    return it;
+    return ["type-qualifier", it];
   }
 
 FunctionSpecifier "function-specifier"
