@@ -112,7 +112,7 @@ input:focus {
 }
 
 .d-error-text::before {
-    content: 'Problem: ';
+    content: 'Error: ';
     font-weight: bold;
     background-image: url('../img/error.png');
 }
