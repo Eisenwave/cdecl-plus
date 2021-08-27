@@ -31,12 +31,20 @@ DeclarationSpecifier "declaration-specifier"
   / FunctionSpecifier
 
 InitDeclaratorList "init-declarator-list"
-  = head:Declarator tail:(Comma Declarator)* {
+  = head:InitDeclarator tail:(Comma InitDeclarator)* {
     return reduceRightRecursion(head, tail);
   }
   / it:AbstractDeclarator? {
     return it ? [it] : [[]];
   }
+
+InitDeclarator "init-declarator"
+  = decl:Declarator XBraceInitializer? {
+    return decl;
+  }
+
+XBraceInitializer "x-brace-initializer"
+  = _ "{" _ "}"
 
 StorageClassSpecifier "storage-class-specifier"
   = it:("typedef"
