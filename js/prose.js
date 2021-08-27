@@ -69,9 +69,17 @@ function declarationToProse(specifiers, declarator, kind) {
 }
 
 function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind) {
+    if (kind !== 'parameter') {
+        const isArrayDeclaration = declarator.length >= 1 && declarator[0].typ === '[]'
+            || declarator.length >= 2 && declarator[0].typ === 'id' && declarator[1].typ === '[]';
+        if (isArrayDeclaration && specifiersProse.histogram.has('void')) {
+            showDiagnostic('array-of-void');
+        }
+    }
+
     const declaratorProse = declaratorToProse(declarator, kind);
     let result = declaratorProse.leadingIdentifier.length ? 'Declare ' + declaratorProse.leadingIdentifier + ' ' : ' ';
-    result += specifiersProse.outer + ' '
+    result += specifiersProse.outer + ' ';
     result += declaratorProse.text + ' ';
     result += specifiersProse.inner + ' ';
     result += specifiersProse.atomic + ' ';
@@ -94,8 +102,7 @@ function specifiersToProse(specifiers, kind) {
         specifiers.push(['type-specifier', toAdd]);
         if (toAdd === 'double') {
             showDiagnostic('implicit-double');
-        }
-        else if (toAdd === 'int' && !specifiersText.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
+        } else if (toAdd === 'int' && !specifiersText.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
             showDiagnostic('implicit-int');
         }
     }
@@ -106,7 +113,8 @@ function specifiersToProse(specifiers, kind) {
     return {
         outer: processedSpecifiersToText(specifiers.filter(s => OUTER_SPECIFIER_TYPES.has(s[0]))),
         inner: processedSpecifiersToText(specifiers.filter(s => INNER_SPECIFIER_TYPES.has(s[0]))),
-        atomic: atomicProse
+        atomic: atomicProse,
+        histogram: histogram
     };
 }
 
