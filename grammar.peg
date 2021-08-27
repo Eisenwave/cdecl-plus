@@ -75,8 +75,11 @@ AtomicTypeSpecifier "atomic-type-specifier"
   }
 
 TypeQualifier "type-qualifier"
-  = it:("const" / "restrict" / "volatile" / AtomicKeyword) !WordChar {
+  = it:("const" / "restrict" / "volatile") !WordChar {
     return ["type-qualifier", it];
+  }
+  / it:AtomicKeyword !(_ "(" / WordChar) {
+    return it;
   }
 
 FunctionSpecifier "function-specifier"
