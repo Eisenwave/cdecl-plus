@@ -2,14 +2,13 @@ const INPUT = document.getElementById("input");
 const OUTPUT = document.getElementById("output");
 const DEBUG_OUTPUT = document.getElementById("debug-output");
 const DIAGNOSTICS = document.getElementById("diagnostics");
+const SyntaxError = module.exports.SyntaxError;
 
 function parseInput(input) {
     updatePageQuery(input);
 
     if (input.trim().length === 0) {
-        INPUT.className = '';
-        OUTPUT.innerText = '';
-        DEBUG_OUTPUT.innerText = '';
+        setOutput({isError: false, prose: '', debug: ''});
         return;
     }
     setDiagnosticsHidden();
@@ -18,15 +17,15 @@ function parseInput(input) {
         const ast = pegParse(input);
         processAst(ast);
     } catch (e) {
-        INPUT.className = 'error';
-        DEBUG_OUTPUT.innerText = e.message;
-        if (e instanceof module.exports.SyntaxError) {
-            OUTPUT.innerText = 'Syntax Error';
+        const error = {isError: true, debug: e.message};
+        if (e instanceof SyntaxError) {
+            error.prose = 'Syntax Error';
         }
         else {
-            OUTPUT.innerText = e.constructor.name + ': ' + e.message;
+            error.prose = e.constructor.name + ': ' + e.message;
             console.error(e);
         }
+        setOutput(error);
     }
 }
 
@@ -34,6 +33,12 @@ function updatePageQuery(input) {
     const urlStart = window.location.href.split('?');
     const query = input.trim().length === 0 ? '' : '?decl=' + encodeURI(input);
     window.history.replaceState({}, null, urlStart[0] + query);
+}
+
+function setOutput(output) {
+    INPUT.className = output.isError ? 'error' : '';
+    OUTPUT.innerText = output.prose;
+    DEBUG_OUTPUT.innerText = output.debug;
 }
 
 function pegParse(input) {
@@ -47,14 +52,11 @@ function sanitizeInput(input) {
 }
 
 function processAst(ast) {
-    INPUT.className = '';
+    const astJson = JSON.stringify(ast, undefined, 4);
     try {
-        OUTPUT.innerText = astToProse(ast);
-        DEBUG_OUTPUT.innerText = JSON.stringify(ast, undefined, 4);
+        setOutput({isError: false, prose: astToProse(ast), debug: astJson});
     } catch (e) {
-        INPUT.className = 'error';
-        OUTPUT.innerText = 'Fatal Error: ' + e.message;
-        DEBUG_OUTPUT.innerText = e instanceof TypeError ? JSON.stringify(ast, undefined, 4) : '';
+        setOutput({isError: true, prose: 'Fatal Error: ' + e.message, debug: astJson});
     }
 }
 
