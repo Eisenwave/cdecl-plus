@@ -1,11 +1,3 @@
-const Type = {
-    CHAR: {id: 'c', name: 'char'},
-    INT: {id: 'i', name: 'int'},
-    SHORT: {id: 's', name: 'short int'},
-    LONG: {id: 'l', name: 'long int'},
-    LONG_LONG: {id: 'll', name: 'long long int'}
-}
-
 const SPECIFIER_CONFLICTS = [
     ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()'],
     ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()'],
@@ -223,7 +215,7 @@ function declaratorToProse(decl, kind) {
     let trailingIdentifier = '';
     let i = 0;
     for (const d of decl) {
-        const isFirst = i === 0 || decl[i - 1] === 'id';
+        const isFirst = i === 0 || decl[i - 1].typ === 'id';
         switch (d.typ) {
             case 'id': {
                 if (isParameter) {
