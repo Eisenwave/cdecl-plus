@@ -43,7 +43,7 @@
             <span class="d-error-text">Can not create array of void, which is an incomplete type</span>
         </div>
         <div id="d-pointer-to-reference" class="d-error" hidden>
-            <span class="d-error-text">Can not create array of references</span>
+            <span class="d-error-text">Can not create pointer to reference</span>
         </div>
         <div id="d-qualified-array" class="d-error" hidden>
             <span class="d-error-text">Arrays with type qualifiers may only appear in function parameters</span>
@@ -62,6 +62,9 @@
         </div>
         <div id="d-function-to-pointer-decay" class="d-info" hidden>
             <span class="d-info-text">Parameter of function type decays to pointer to function</span>
+        </div>
+        <div id="d-empty-function-parameters" class="d-info" hidden>
+            <span class="d-info-text">Function with empty parameter list takes unspecified number of parameters</span>
         </div>
     </div>
 

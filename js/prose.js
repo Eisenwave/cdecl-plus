@@ -305,8 +305,12 @@ function declaratorToProse(decl, kind) {
                         paramsProses.push(declarationToProse(p.specifiers, p.declarator, 'parameter'));
                     }
                 }
+                if (paramsProses.length === 0) {
+                    showDiagnostic('empty-function-parameters')
+                }
+
                 const paramsText = paramsProses.join(', ').trim();
-                const parenthesizedParams = paramsText.length === 0 ? '' : `(${paramsText})`;
+                const parenthesizedParams = paramsProses.length === 0 ? '' : `(${paramsText})`;
                 result += ` function${pluralS}${parenthesizedParams} returning`;
                 pluralS = '';
                 break;

@@ -15,7 +15,7 @@ function parseInput(input) {
 
     try {
         const ast = pegParse(input);
-        processAst(ast);
+        setOutput(processAst(ast));
     } catch (e) {
         const error = {isError: true, debug: e.message};
         if (e instanceof SyntaxError) {
@@ -54,9 +54,9 @@ function sanitizeInput(input) {
 function processAst(ast) {
     const astJson = JSON.stringify(ast, undefined, 4);
     try {
-        setOutput({isError: false, prose: astToProse(ast), debug: astJson});
+        return {isError: false, prose: astToProse(ast), debug: astJson};
     } catch (e) {
-        setOutput({isError: true, prose: 'Fatal Error: ' + e.message, debug: astJson});
+        return {isError: true, prose: 'Fatal Error: ' + e.message, debug: astJson};
     }
 }
 
