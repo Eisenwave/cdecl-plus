@@ -35,6 +35,7 @@ h1 {
         background: linear-gradient(to top right, #e07373, #ffb6c1);
 
         -webkit-background-clip: text;
+        background-clip: text;
     }
 }
 
@@ -43,6 +44,7 @@ h1 {
         color: transparent !important;
         background: linear-gradient(to top right, #e07373, #ffb6c1);
         -ms-background-clip: text;
+        background-clip: text;
     }
 }
 
@@ -51,6 +53,7 @@ h1 {
         color: transparent !important;
         background: linear-gradient(to top right, #e07373, #ffb6c1);
         -o-background-clip: text;
+        background-clip: text;
     }
 }
 
