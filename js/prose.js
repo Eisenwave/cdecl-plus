@@ -1,3 +1,5 @@
+const cdecl = {showDiagnostic: id => showDiagnostic(id)};
+
 const SPECIFIER_CONFLICTS = [
     ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()'],
     ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()'],
@@ -61,10 +63,21 @@ function declarationToProse(specifiers, declarator, kind) {
 }
 
 function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind) {
-    if (kind !== 'parameter') {
-        const isSomethingSomethingArray = declarator.length !== 0 && declarator[declarator.length - 1].typ === '[]'
-        if (isSomethingSomethingArray && specifiersProse.histogram.has('void')) {
-            showDiagnostic('array-of-void');
+    const histo = specifiersProse.histogram;
+    if (histo.has('void')) {
+        if (kind !== 'parameter' && declarator.length !== 0 && declarator[declarator.length - 1].typ === '[]') {
+            cdecl.showDiagnostic('array-of-void');
+        }
+        if (declarator.length !== 0 && ['&', '&&'].includes(declarator[declarator.length - 1].typ)) {
+            cdecl.showDiagnostic('reference-to-void')
+        }
+        if (declarator.length === 1 && declarator[0].typ === 'id') {
+            cdecl.showDiagnostic('void-variable')
+        }
+        // FIXME does this work for _Atomic(void) ?
+        const isQualified = histo.has('const') || histo.has('volatile') || histo.has('restrict') || histo.has('_Atomic');
+        if (kind === 'parameter' && (declarator.length === 0 || declarator.length === 1 && declarator[0].typ === 'id') && isQualified) {
+            cdecl.showDiagnostic('qualified-void-parameter');
         }
     }
 
@@ -92,9 +105,9 @@ function specifiersToProse(specifiers, kind) {
         const toAdd = histogram.has('complex') ? 'double' : 'int';
         specifiers.push(['type-specifier', toAdd]);
         if (toAdd === 'double') {
-            showDiagnostic('implicit-double');
+            cdecl.showDiagnostic('implicit-double');
         } else if (toAdd === 'int' && !specifiersText.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
-            showDiagnostic('implicit-int');
+            cdecl.showDiagnostic('implicit-int');
         }
     }
     const atomicSpecifier = specifiers.filter(s => s[0] === 'atomic-type-specifier')[0];
@@ -241,10 +254,10 @@ function declaratorToProse(decl, kind) {
                     throw {message: 'Reference to reference is not allowed'};
                 }
                 if (i !== 0 && decl[i - 1].typ === '[]') {
-                    showDiagnostic('array-of-references');
+                    cdecl.showDiagnostic('array-of-references');
                 }
                 if (i !== 0 && decl[i - 1].typ === '*') {
-                    showDiagnostic('pointer-to-reference');
+                    cdecl.showDiagnostic('pointer-to-reference');
                 }
 
                 const rvalue = d.typ === '&&' ? 'rvalue-' : '';
@@ -254,7 +267,7 @@ function declaratorToProse(decl, kind) {
             }
             case '[*]': {
                 if (!isParameter || i > 1 || i === 1 && decl[0].typ !== 'id') {
-                    showDiagnostic('non-parameter-vla');
+                    cdecl.showDiagnostic('non-parameter-vla');
                 }
                 const q = d.qualifiers.sort(compareSpecifiers).join(' ');
                 result += ` ${q} VLA${pluralS} of unspecified size of`;
@@ -263,16 +276,16 @@ function declaratorToProse(decl, kind) {
             }
             case '[]': {
                 if (!isParameter && d.qualifiers.length !== 0) {
-                    showDiagnostic('qualified-array');
+                    cdecl.showDiagnostic('qualified-array');
                 }
                 if (i !== 0 && decl[i - 1].typ === '()') {
-                    showDiagnostic('returning-array')
+                    cdecl.showDiagnostic('returning-array')
                 }
                 if (isParameter && isFirst) {
-                    showDiagnostic('array-to-pointer-decay');
+                    cdecl.showDiagnostic('array-to-pointer-decay');
                 }
                 if (isFirst && kind === 'atomic') {
-                    showDiagnostic('atomic-array');
+                    cdecl.showDiagnostic('atomic-array');
                 }
 
                 const q = d.qualifiers.sort(compareSpecifiers).join(' ');
@@ -284,16 +297,16 @@ function declaratorToProse(decl, kind) {
             }
             case '()': {
                 if (i !== 0 && decl[i - 1].typ === '()') {
-                    showDiagnostic('returning-function');
+                    cdecl.showDiagnostic('returning-function');
                 }
                 if (i !== 0 && decl[i - 1].typ === '[]') {
-                    showDiagnostic('array-of-functions');
+                    cdecl.showDiagnostic('array-of-functions');
                 }
                 if (isParameter && isFirst) {
-                    showDiagnostic('function-to-pointer-decay');
+                    cdecl.showDiagnostic('function-to-pointer-decay');
                 }
                 if (isFirst && kind === 'atomic') {
-                    showDiagnostic('atomic-function');
+                    cdecl.showDiagnostic('atomic-function');
                 }
 
                 const paramsProses = [];
@@ -305,7 +318,7 @@ function declaratorToProse(decl, kind) {
                     }
                 }
                 if (paramsProses.length === 0) {
-                    showDiagnostic('empty-function-parameters')
+                    cdecl.showDiagnostic('empty-function-parameters')
                 }
 
                 const paramsText = paramsProses.join(', ').trim();

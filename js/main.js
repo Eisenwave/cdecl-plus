@@ -9,6 +9,7 @@ function parseInput(input) {
 
     if (input.trim().length === 0) {
         setOutput({isError: false, prose: '', debug: ''});
+        setDiagnosticsHidden();
         return;
     }
     setDiagnosticsHidden();
@@ -20,8 +21,7 @@ function parseInput(input) {
         const error = {isError: true, debug: e.message};
         if (e instanceof SyntaxError) {
             error.prose = 'Syntax Error';
-        }
-        else {
+        } else {
             error.prose = e.constructor.name + ': ' + e.message;
             console.error(e);
         }
@@ -66,10 +66,12 @@ function setDiagnosticsHidden(hidden = true) {
     }
 }
 
+
 function showDiagnostic(id, shown = true) {
     const element = document.getElementById('d-' + id);
     element.hidden = !shown;
 }
+
 
 window.addEventListener('load', () => {
     const urlSearchParams = new URLSearchParams(window.location.search);
