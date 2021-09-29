@@ -62,9 +62,8 @@ function declarationToProse(specifiers, declarator, kind) {
 
 function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind) {
     if (kind !== 'parameter') {
-        const isArrayDeclaration = declarator.length >= 1 && declarator[0].typ === '[]'
-            || declarator.length >= 2 && declarator[0].typ === 'id' && declarator[1].typ === '[]';
-        if (isArrayDeclaration && specifiersProse.histogram.has('void')) {
+        const isSomethingSomethingArray = declarator.length !== 0 && declarator[declarator.length - 1].typ === '[]'
+        if (isSomethingSomethingArray && specifiersProse.histogram.has('void')) {
             showDiagnostic('array-of-void');
         }
     }
