@@ -65,7 +65,7 @@ function declarationToProse(specifiers, declarator, kind) {
 function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind) {
     const histo = specifiersProse.histogram;
     if (histo.has('void')) {
-        if (kind !== 'parameter' && declarator.length !== 0 && declarator[declarator.length - 1].typ === '[]') {
+        if (declarator.length !== 0 && declarator[declarator.length - 1].typ === '[]') {
             cdecl.showDiagnostic('array-of-void');
         }
         if (declarator.length !== 0 && ['&', '&&'].includes(declarator[declarator.length - 1].typ)) {
