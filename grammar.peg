@@ -158,8 +158,8 @@ XPostfix "x-postfix"
   / _ "[" _ qual:TypeQualifierList? _ "*" _ "]" _ {
     return {typ: "[*]", qualifiers: (qual ?? []).map(e => e[1])};
   }
-  / _ "(" _ params:ParameterTypeList? _ ")" _ {
-    return {typ: "()", params: params ?? []};
+  / _ "(" _ params:ParameterTypeList? _ ")" _ q:FunctionQualifierList {
+    return {typ: "()", params: params ?? [], qualifiers: q};
   }
 
 XScope "x-scope"
@@ -193,6 +193,24 @@ XReferenceItem "x-reference-item"
 TypeQualifierList "type-qualifier-list"
   = head:TypeQualifier tail:(__ TypeQualifier)* {
     return reduceRightRecursion(head, tail);
+  }
+
+FunctionQualifierList "x-function-qualifier-list"
+  = cv:TypeQualifierList? ref:(_ "&&" / _ "&") virt:(_ OverrideFinal)? {
+    return [...(cv ?? []), ref].map(e => e[1])
+                       .concat(virt ? [virt[1]] : []);
+  }
+  / cv:TypeQualifierList virt:(__ OverrideFinal)? {
+    return [...cv].map(e => e[1])
+                  .concat(virt ? [virt[1]] : []);
+  }
+  / it:OverrideFinal? {
+    return it ? [it] : [];
+  }
+
+OverrideFinal "x-override-final"
+  = it:("override" !WordChar / "final" !WordChar) {
+    return it[0];
   }
 
 ParameterTypeList "parameter-type-list"
