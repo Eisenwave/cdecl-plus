@@ -321,9 +321,26 @@ function declaratorToProse(decl, kind) {
                     cdecl.showDiagnostic('empty-function-parameters')
                 }
 
+                let overrideFinal = d.qualifiers[d.qualifiers.length - 1];
+                if (!['override', 'final'].includes(overrideFinal)) {
+                    overrideFinal = undefined;
+                }
+                const qualifiersFront = d.qualifiers.length === 0 ? []
+                    : d.qualifiers.splice(0, d.qualifiers.length - Number(overrideFinal !== undefined));
+                if (qualifiersFront.includes('_Atomic')) {
+                    cdecl.showDiagnostic('atomic-qualified-function');
+                }
+                if (qualifiersFront.includes('restrict')) {
+                    cdecl.showDiagnostic('restrict-qualified-function');
+                }
+
+                const qualifiersText = qualifiersFront.length === 0 ? '' : `${qualifiersFront.join('-')}-qualified`;
+                const overrideText = overrideFinal === undefined ? ''
+                    : (qualifiersText.length === 0 ? '' : ', ') + overrideFinal;
+
                 const paramsText = paramsProses.join(', ').trim();
                 const parenthesizedParams = paramsProses.length === 0 ? '' : `(${paramsText})`;
-                result += ` function${pluralS}${parenthesizedParams} returning`;
+                result += ` ${qualifiersText}${overrideText} function${pluralS}${parenthesizedParams} returning`;
                 pluralS = '';
                 break;
             }
