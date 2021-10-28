@@ -1,14 +1,14 @@
 const cdecl = {showDiagnostic: id => showDiagnostic(id)};
 
 const SPECIFIER_CONFLICTS = [
-    ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()'],
+    ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()', 'typedef-name'],
     ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()'],
-    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long',],
+    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'typedef-name'],
     ['class', 'struct', 'union', 'enum', 'void', 'complex', '_Atomic()'],
     ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'float', 'double', 'void', '_Atomic()'],
     ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'complex'],
     ['int', 'complex'],
-    ['char', 'short', 'short', 'void', 'bool', 'complex'],
+    ['char', 'short', 'long', 'void', 'bool', 'complex'],
     ['int', 'float', 'double', 'void', '_Atomic()'],
     ['char', 'short', 'float', 'double', 'void', '_Atomic()'],
     ['typedef', 'register', 'auto', 'extern', 'static', 'thread_local'],
@@ -92,21 +92,19 @@ function declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind
 }
 
 function specifiersToProse(specifiers, kind) {
-    const specifiersText = specifiers
-        .map(s => s[0] === 'atomic-type-specifier' ? '_Atomic()' : s[0] === 'typedef-name' ? 'typedef-name' : s[1]);
-
-    const histogram = makeHistogram(specifiersText);
+    const specifierIds = specifiers.map(specifierToId);
+    const histogram = makeHistogram(specifierIds);
 
     checkForMisuse(specifiers, kind);
-    checkForConflicts(specifiersText);
+    checkForConflicts(specifierIds);
     checkForDuplicates(histogram);
 
-    if (!specifiersText.some(s => EXPLICIT_TYPE_SPECIFIERS.has(s))) {
+    if (!specifierIds.some(s => EXPLICIT_TYPE_SPECIFIERS.has(s))) {
         const toAdd = histogram.has('complex') ? 'double' : 'int';
         specifiers.push(['type-specifier', toAdd]);
         if (toAdd === 'double') {
             cdecl.showDiagnostic('implicit-double');
-        } else if (toAdd === 'int' && !specifiersText.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
+        } else if (toAdd === 'int' && !specifierIds.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
             cdecl.showDiagnostic('implicit-int');
         }
     }
@@ -122,6 +120,19 @@ function specifiersToProse(specifiers, kind) {
     };
 }
 
+function specifierToId(s) {
+    switch (s[0]) {
+        case 'atomic-type-specifier':
+            return '_Atomic()';
+        case 'typedef-name':
+            return 'typedef-name';
+        case 'enum-specifier':
+            return 'enum';
+        default:
+            return s[1];
+    }
+}
+
 function makeHistogram(specifiers) {
     const result = new Map();
     specifiers.forEach(s => {
@@ -130,16 +141,16 @@ function makeHistogram(specifiers) {
     return result;
 }
 
-function checkForConflicts(specifiers) {
+function checkForConflicts(specifierIds) {
     for (const conflictPool of SPECIFIER_CONFLICTS) {
         let first = undefined;
-        for (const s of specifiers) {
+        for (const s of specifierIds) {
             if (!conflictPool.includes(s))
                 continue;
             if (first === undefined)
                 first = s;
             else if (first !== s)
-                throw {message: 'Conflicting specifiers ' + first + ' and ' + s};
+                throw {message: `Conflicting specifiers ${first} and ${s}`};
         }
     }
 }
@@ -206,11 +217,14 @@ function compareSpecifiers(a, b) {
 }
 
 function specifierToText(specifier) {
-    let text = specifier[1];
-    if (specifier[0] === 'struct-or-union-specifier' || specifier[0] === 'enum-specifier') {
-        text = specifier.length > 2 ? text + ' ' + specifier[2] : 'anonymous ' + text;
+    switch (specifier[0]) {
+        case 'struct-or-union-specifier':
+            return specifier.length > 2 ? specifier[1] + ' ' + specifier[2] : 'anonymous ' + specifier[1];
+        case 'enum-specifier':
+            return 'enum ' + specifier[1];
+        default:
+            return remapSpecifierTextForReadability(specifier[1]);
     }
-    return remapSpecifierTextForReadability(text);
 }
 
 function remapSpecifierTextForReadability(text) {
