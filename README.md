@@ -1,7 +1,7 @@
 # cdecl+
 
 [![GitHub pages badge](https://img.shields.io/badge/GitHub%20Pages-Active-green.svg)](https://eisenwave.github.io/cdecl-plus)
-![screenshot of cdecl+ website](cdecl.png)
+![screenshot of cdecl+ website](img/cdecl.png)
 cdecl+ is an online utility written in JavaScript, which turns C declarations into prose.
 It is primarily designed for C, but supports some C++ features such as function qualifiers and references.
 
