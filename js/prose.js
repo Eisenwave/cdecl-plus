@@ -1,10 +1,10 @@
 const cdecl = {showDiagnostic: id => showDiagnostic(id)};
 
 const SPECIFIER_CONFLICTS = [
-    ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()', 'typedef-name'],
-    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()'],
-    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'typedef-name'],
-    ['class', 'struct', 'union', 'enum', 'void', 'complex', '_Atomic()'],
+    ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()', 'typedef-name', 'bool'],
+    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()', 'bool'],
+    ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'typedef-name', 'bool'],
+    ['class', 'struct', 'union', 'enum', 'void', 'complex', '_Atomic()', 'bool'],
     ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'float', 'double', 'void', '_Atomic()'],
     ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'complex'],
     ['int', 'complex'],
