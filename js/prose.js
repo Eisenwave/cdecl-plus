@@ -261,7 +261,10 @@ function declaratorToProse(decl, kind) {
                 break;
             }
             case '*': {
-                const q = d.qualifiers.sort(compareSpecifiers).map(remapSpecifierTextForReadability).join(' ');
+                const q = d.qualifiers
+                    .sort(compareSpecifiers)
+                    .map(remapSpecifierTextForReadability)
+                    .join(' ');
                 result += ` ${q} pointer${pluralS} to`;
                 pluralS = '';
                 break;
@@ -287,7 +290,10 @@ function declaratorToProse(decl, kind) {
                 if (!isParameter || i > 1 || i === 1 && decl[0].typ !== 'id') {
                     cdecl.showDiagnostic('non-parameter-vla');
                 }
-                const q = d.qualifiers.sort(compareSpecifiers).join(' ');
+                const q = d.qualifiers
+                    .sort(compareSpecifiers)
+                    .map(remapSpecifierTextForReadability)
+                    .join(' ');
                 result += ` ${q} VLA${pluralS} of unspecified size of`;
                 pluralS = 's';
                 break;
