@@ -252,6 +252,10 @@ function declaratorToProse(decl, kind) {
                 break;
             }
             case '::': {
+                if (i !== 0 && (decl[i - 1].typ === '&' || decl[i - 1].typ === '&&')) {
+                    cdecl.showDiagnostic('reference-to-member');
+                }
+
                 const ns = d.id ?? 'global namespace';
                 result += ` member${pluralS} of ${ns}, with type`;
                 break;
