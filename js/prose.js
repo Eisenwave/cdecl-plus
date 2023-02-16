@@ -301,6 +301,9 @@ function declaratorToProse(decl, kind) {
                 if (isFirst && kind === 'atomic') {
                     cdecl.showDiagnostic('atomic-array');
                 }
+                if (d.size && d.size.value === 0) {
+                    cdecl.showDiagnostic('zero-size-array');
+                }
 
                 const q = d.qualifiers.sort(compareSpecifiers).join(' ');
                 const statik = d.statik ? ' (size checked)' : '';
