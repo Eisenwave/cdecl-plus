@@ -402,7 +402,7 @@ module.exports = /*
         peg$c167 = /^[0-7]/,
         peg$c168 = peg$classExpectation([["0", "7"]], false, false),
         peg$c169 = function(digits) {
-            return [8, digits? Number.parseInt(digits, 8) : 0];
+            return [8, digits ? Number.parseInt(digits, 8) : 0];
           },
         peg$c170 = peg$otherExpectation("decimal-constant"),
         peg$c171 = /^[1-9]/,

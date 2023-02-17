@@ -254,7 +254,7 @@ Identifier "identifier"
   }
 
 IntegerConstant "integer-constant"
-  = value:(BinaryConstant / OctalConstant / DecimalConstant / HexadecimalConstant) typ:IntegerSuffix? {
+  = value:(BinaryConstant / HexadecimalConstant / OctalConstant / DecimalConstant) typ:IntegerSuffix? {
     return {base: value[0], value: value[1], typ: typ ?? Type.INT};
   }
 
@@ -263,19 +263,19 @@ BinaryConstant "binary-constant"
     return [2, Number.parseInt(digits, 2)];
   }
 
+HexadecimalConstant "hexadecimal-constant"
+  = "0"[xX] digits:$[0-9a-fA-F]+ {
+    return [16, Number.parseInt(digits, 16)];
+  }
+
 OctalConstant "octal-constant"
-  = "0"+ digits:$[0-7]+ {
-    return [8, Number.parseInt(digits, 8)];
+  = "0"+ digits:$[0-7]* {
+    return [8, digits ? Number.parseInt(digits, 8) : 0];
   }
 
 DecimalConstant "decimal-constant"
   = [1-9][0-9]* {
     return [10, Number.parseInt(text(), 10)];
-  }
-
-HexadecimalConstant "hexadecimal-constant"
-  = "0"[xX] digits:$[0-9a-fA-F]+ {
-    return [16, Number.parseInt(digits, 16)];
   }
 
 IntegerSuffix "integer-suffix"
