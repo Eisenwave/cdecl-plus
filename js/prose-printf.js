@@ -245,7 +245,7 @@ function formatSpecifierWithTypeToProseHeader(specifier, typ) {
             return `Write single character of type ${typ}, converted to ${convType}`;
         }
         case 's':
-            return `Write a null-terminated ${typ} string of type`;
+            return `Write a null-terminated string of type ${typ}`;
         case 'd':
         case 'i':
             return `Write a decimal ${typ}`;
