@@ -4,6 +4,35 @@
     return [head, ...tail];
   };
   
+  function concatInPlace(dest, src) {
+      for (const e of src) {
+          dest.push(e);
+      }
+  };
+
+  function mergeLiteralsAndWhitespace(parts) {
+      const result = [];
+      let mergeNext = false;
+      for (const part of parts) {
+          if (part.typ === 'whitespace' || part.typ === 'literal') {
+              if (mergeNext) {
+                  result[result.length - 1].value += part.value;
+              }
+              else {
+                  part.typ = 'literal';
+                  result.push(part);
+              }
+              mergeNext = true;
+          }
+          else {
+              result.push(part);
+              mergeNext = false;
+          }
+      }
+
+      return result;
+  };
+
   const Type = {
     INT: 'i',
     UINT: 'u',
@@ -15,33 +44,39 @@
 }
 
 Main
-  = Declaration / PrintfCall
+  = Declaration / FormatCall
 
-PrintfCall "printf-call"
-  = _ ("::"? _ "std" _ "::" _)? "printf" _ "(" _ args:PrintfArguments? _ ")" {
-      return {"printfArgs": args ?? []}
+FormatCall "printf-scanf-call"
+  = _ ("::"? _ "std" _ "::" _)? id:("printf" / "scanf") _ "(" _ args:FormatArguments? _ ")" {
+      const key = id + "Args";
+      let result = args ?? [];
+      if (id === 'printf' && result.length !== 0) {
+          result[0] = mergeLiteralsAndWhitespace(result[0]);
+      }
+
+      return {[key]: result}
   }
 
-PrintfArguments
-  = head:PrintfFormatString tail:(_ "," _ PrintfArgument)* {
+FormatArguments
+  = head:FormatString tail:(_ "," _ FormatArgument)* {
       return reduceRightRecursion(head, tail);
   }
 
-PrintfFormatString
-  = "\"" tokens:PrintfFormatToken* "\"" {
+FormatString
+  = "\"" tokens:FormatToken* "\"" {
       return tokens;
   }
 
-PrintfFormatToken
-  = PrintfFormatSpecifier / PrintfLiteral
+FormatToken
+  = FormatSpecifier / FormatWhitespace / FormatLiteral
 
-PrintfFormatSpecifier
+FormatSpecifier
   = "%"
   flags: [-+ #0]*
-  width: PrintfFormatInteger?
-  prec:("." PrintfFormatInteger)?
-  length:PrintfLengthModifier
-  end:[%csdioxXufFeEaAgGnp]
+  width: FormatInteger?
+  prec:("." FormatInteger)?
+  length:FormatLengthModifier
+  end:FormatConversionSpecifier
   {
       return {
           typ: "%",
@@ -49,30 +84,66 @@ PrintfFormatSpecifier
           width,
           precision: prec?.[1] ?? null,
           length,
-          value: end
+          value: typeof(end) === 'string' ? end : '[]',
+          negated: Boolean(end.negated),
+          ranges: end.ranges ?? []
       };
   }
 
-PrintfFormatInteger
-  = "*" / PrintfInteger
+FormatInteger
+  = "*" / FormatDecimalInteger
 
-PrintfInteger
+FormatDecimalInteger
   = ("0" / [1-9][0-9]*) {
     return Number(text());
   }
 
-PrintfLengthModifier
+FormatLengthModifier
   = "hh" / "h" / "ll" / "l" / "j" / "z" / "t" / "L" / ""
 
-PrintfLiteral
-  = tokens:(&(![\"%]) .)+ {
+FormatWhitespace
+  = [ \t\n\r]+ {
       return {
-          typ: "literal",
-          value: tokens.map(t => t[1]).join("")
+          typ: "whitespace",
+          value: text()
       };
   }
 
-PrintfArgument
+FormatLiteral
+  = [^ \t\n\r\"%]+ {
+      return {
+          typ: "literal",
+          value: text()
+      };
+  }
+
+FormatConversionSpecifier
+  = [%csdioxXufFeEaAgGnp] / FormatCharacterSet
+
+FormatCharacterSet
+  = "[" n:"^"? ranges:(FormatSetRange / FormatSetSingleRange)* "]" {
+      return {
+          negated: Boolean(n),
+          ranges
+      };
+  }
+
+FormatSetRange
+  = start:FormatSetCharacter "-" end:FormatSetCharacter {
+      return [start, end];
+  }
+
+FormatSetSingleRange
+  = c:FormatSetCharacter {
+      return [c, c];
+  }
+
+FormatSetCharacter
+  = c:[^\]] {
+      return c;
+  }
+
+FormatArgument
   = [-+~&*! ]* Identifier {
       return text().trim();
   }

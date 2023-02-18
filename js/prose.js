@@ -7,6 +7,9 @@ function astToProse(ast) {
     else if (ast['printfArgs']) {
         return printfArgsToProse(ast);
     }
+    else if (ast['scanfArgs']) {
+        return scanfArgsToProse(ast);
+    }
     throw {message: 'Empty AST'};
 }
 

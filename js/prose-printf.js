@@ -98,12 +98,20 @@ const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
 function printfArgsToProse(ast) {
-    if (ast.printfArgs.length === 0) {
+    return formatArgsToProse(ast['printfArgs'], false);
+}
+
+function scanfArgsToProse(ast) {
+    return formatArgsToProse(ast['scanfArgs'], true);
+}
+
+function formatArgsToProse(args, isScanf) {
+    if (args.length === 0) {
         throw {message: 'printf requires at least one argument'};
     }
 
-    let {prose, types} = formatStringToProse(ast.printfArgs[0]);
-    const expectedArgsCount = Math.max(ast.printfArgs.length, types.length + 1);
+    let {prose, types} = formatStringToProse(args[0], isScanf);
+    const expectedArgsCount = Math.max(args.length, types.length + 1);
 
     if (expectedArgsCount > 1) {
         prose += ARGUMENTS_HEADER;
@@ -111,7 +119,7 @@ function printfArgsToProse(ast) {
 
 
     for (let i = 1; i < expectedArgsCount; ++i) {
-        const expr = ast.printfArgs[i]?.replaceAll(' ', '') ?? 'MISSING';
+        const expr = args[i]?.replaceAll(' ', '') ?? 'MISSING';
         const typ = types[i - 1] ?? 'TOO MANY ARGUMENTS';
         prose += `\n${expr} (${typ})`;
     }
@@ -119,20 +127,26 @@ function printfArgsToProse(ast) {
     return prose;
 }
 
-function formatStringToProse(parts) {
-    const proses = parts.map(formatSpecifierToProse);
+function formatStringToProse(parts, isScanf) {
+    const proses = parts.map(e => formatSpecifierToProse(e, isScanf));
     return {
         prose: proses.map(p => p.prose).join('\n'),
         types: proses.map(p => p.types).flat()
     };
 }
 
-function formatSpecifierToProse(specifier) {
+function formatSpecifierToProse(specifier, isScanf) {
     if (specifier.typ === 'literal') {
+        const prose = isScanf ? `Match "${specifier.value}"`
+                              : `Write "${specifier.value}"`;
+        return {prose, types: []};
+    }
+    if (specifier.typ === 'whitespace') {
+        // can only appear in scanf, merged to literal in printf
         return {
-            prose: `Write "${specifier.value}"`,
+            prose: `Match any amount of whitespace`,
             types: []
-        };
+        }
     }
 
     const typKey = specifier.length + specifier.value;
