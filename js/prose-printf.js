@@ -11,10 +11,10 @@ const PRINTF_TYPES = {
     'hi': 'short',
     'd': 'int',
     'i': 'int',
-    'ld': 'long int',
-    'li': 'long int',
-    'lld': 'long long int',
-    'lli': 'long long int',
+    'ld': 'long',
+    'li': 'long',
+    'lld': 'long long',
+    'lli': 'long long',
     'jd': 'intmax_t',
     'ji': 'intmax_t',
     'zd': 'ssize_t',
@@ -94,6 +94,108 @@ const PRINTF_TYPES = {
     'p': 'void*'
 };
 
+const SCANF_TYPES = {
+    'c': 'char*',
+    'lc': 'wchar_t*',
+    's': 'char*',
+    'ls': 'wchar_t*',
+    '[]': 'char*',
+    'l[]': 'wchar_t*',
+
+    'hhd': 'signed char* or unsigned char*',
+    'hhi': 'signed char* or unsigned char*',
+    'hho': 'signed char* or unsigned char*',
+    'hhu': 'signed char* or unsigned char*',
+    'hhx': 'signed char* or unsigned char*',
+    'hhX': 'signed char* or unsigned char*',
+    'hhn': 'signed char* or unsigned char*',
+
+    'hd': 'short* or unsigned short*',
+    'hi': 'short* or unsigned short*',
+    'ho': 'short* or unsigned short*',
+    'hu': 'short* or unsigned short*',
+    'hx': 'short* or unsigned short*',
+    'hX': 'short* or unsigned short*',
+    'hn': 'short* or unsigned short*',
+
+    'd': 'int* or unsigned int*',
+    'i': 'int* or unsigned int*',
+    'o': 'int* or unsigned int*',
+    'u': 'int* or unsigned int*',
+    'x': 'int* or unsigned int*',
+    'X': 'int* or unsigned int*',
+    'n': 'int* or unsigned int*',
+
+    'ld': 'long* or unsigned long*',
+    'li': 'long* or unsigned long*',
+    'lo': 'long* or unsigned long*',
+    'lu': 'long* or unsigned long*',
+    'lx': 'long* or unsigned long*',
+    'lX': 'long* or unsigned long*',
+    'ln': 'long* or unsigned long*',
+
+    'lld': 'long long* or unsigned long long*',
+    'lli': 'long long* or unsigned long long*',
+    'llo': 'long long* or unsigned long long*',
+    'llu': 'long long* or unsigned long long*',
+    'llx': 'long long* or unsigned long long*',
+    'llX': 'long long* or unsigned long long*',
+    'lln': 'long long* or unsigned long long*',
+
+    'jd': 'intmax_t* or uintmax_t*',
+    'ji': 'intmax_t* or uintmax_t*',
+    'jo': 'intmax_t* or uintmax_t*',
+    'ju': 'intmax_t* or uintmax_t*',
+    'jx': 'intmax_t* or uintmax_t*',
+    'jX': 'intmax_t* or uintmax_t*',
+    'jn': 'intmax_t* or uintmax_t*',
+
+    'zd': 'size_t*',
+    'zi': 'size_t*',
+    'zo': 'size_t*',
+    'zu': 'size_t*',
+    'zx': 'size_t*',
+    'zX': 'size_t*',
+    'zn': 'size_t*',
+
+    'td': 'ptrdiff_t*',
+    'ti': 'ptrdiff_t*',
+    'to': 'ptrdiff_t*',
+    'tu': 'ptrdiff_t*',
+    'tx': 'ptrdiff_t*',
+    'tX': 'ptrdiff_t*',
+    'tn': 'ptrdiff_t*',
+
+    'f': 'float*',
+    'F': 'float*',
+    'e': 'float*',
+    'E': 'float*',
+    'a': 'float*',
+    'A': 'float*',
+    'g': 'float*',
+    'G': 'float*',
+
+    'lf': 'double*',
+    'lF': 'double*',
+    'le': 'double*',
+    'lE': 'double*',
+    'la': 'double*',
+    'lA': 'double*',
+    'lg': 'double*',
+    'lG': 'double*',
+
+    'Lf': 'long double*',
+    'LF': 'long double*',
+    'Le': 'long double*',
+    'LE': 'long double*',
+    'La': 'long double*',
+    'LA': 'long double*',
+    'Lg': 'long double*',
+    'LG': 'long double*',
+
+    'p': 'void**'
+};
+
 const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
@@ -150,12 +252,13 @@ function formatSpecifierToProse(specifier, isScanf) {
     }
 
     const typKey = specifier.length + specifier.value;
-    const typ = PRINTF_TYPES[typKey];
+    const typ = (isScanf ? SCANF_TYPES : PRINTF_TYPES)[typKey];
 
     if (specifier.value !== '%' && !typ)
         throw {message: `Invalid format specifier %${typKey}`};
 
-    const {header, details, types} = formatSpecifierWithTypeToProse(specifier, typ);
+    const {header, details, types}
+        = formatSpecifierWithTypeToProse(specifier, typ, isScanf);
     const indent = '    ';
     const prose = header + (details.length ? '\n' + details.map(p => indent + p).join('\n') : '');
 
@@ -217,10 +320,9 @@ const PRECISION_MEANINGS = {
     'u': 'minimum digit count',
 };
 
-function formatSpecifierWithTypeToProse(specifier, typ) {
-    const details = formatSpecifierFlagsToProse(specifier);
-    const header = formatSpecifierWithTypeToProseHeader(specifier, typ);
+function printfFieldWidthToProse(specifier, typ, details) {
     const types = [];
+
     if (typ) {
         types.push(typ);
     }
@@ -233,19 +335,112 @@ function formatSpecifierWithTypeToProse(specifier, typ) {
         details.push('*: field width is read from int argument');
     }
 
-    const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
-    if (typeof(specifier.precision) === 'number') {
-        details.push(`${precisionName}: ${specifier.precision}`);
+    return types;
+}
+
+function scanfWidthToProse(specifier, typ, details) {
+    const types = [];
+
+    if (typeof(specifier.width) === 'number') {
+        switch (specifier.value) {
+            case 'c':
+            case 's':
+            case '[]':
+                details.push(`maximum string length: ${specifier.width}`);
+                break;
+            default:
+                details.push(`${specifier.width}: INVALID USE OF STRING LENGTH`);
+        }
     }
-    else if (specifier.precision === '*') {
-        types.push('int');
-        details.push(`.*: ${precisionName} is read from int argument`);
+    else if (specifier.width === '*') {
+        details.push('*: suppress assignment');
+    }
+    else if (typ) {
+        types.push(typ);
+    }
+
+    return types;
+}
+
+function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
+    const details = isScanf ? specifier.flags.length ? ['INVALID USE OF PRINTF FLAGS IN SCANF'] : []
+                            : formatSpecifierFlagsToProse(specifier);
+
+    const header = isScanf ? scanfSpecifierWithTypeToProseHeader(specifier, typ)
+                           : printfSpecifierWithTypeToProseHeader(specifier, typ);
+    const types = (isScanf ? scanfWidthToProse : printfFieldWidthToProse)(specifier, typ, details);
+
+    // FIXME: both assignment suppression and field width are currently
+    //        not supported
+
+    if (isScanf) {
+        if (specifier.precision) {
+            details.push(`${specifier.precision}: INVALID USE OF PRINTF PRECISION IN SCANF`);
+        }
+    }
+    else {
+        const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
+        if (typeof(specifier.precision) === 'number') {
+            details.push(`${precisionName}: ${specifier.precision}`);
+        }
+        else if (specifier.precision === '*') {
+            types.push('int');
+            details.push(`.*: ${precisionName} is read from int argument`);
+        }
+    }
+
+    if (isScanf && specifier.value === '[]') {
+        const incl = specifier.negated ? 'excludes' : 'includes';
+        for (const range of specifier.ranges) {
+            details.push(range[0] === range[1] ?
+                `set ${incl} ${range[0]}` :
+                `set ${incl} range ${range[0]}-${range[1]}`);
+        }
     }
 
     return {header, details, types};
 }
 
-function formatSpecifierWithTypeToProseHeader(specifier, typ) {
+function scanfSpecifierWithTypeToProseHeader(specifier, typ) {
+    switch (specifier.value) {
+        case '%':
+            return 'Match "%"';
+        case 'c':
+            return typeof(specifier.width) === 'number' ?
+                `Read one or multiple characters ${typ}, with no null-terminator emitted` :
+                `Read a single character to ${typ}`;
+        case 's':
+            return `Read sequence of non-whitespace characters to ${typ}, append null-terminator`;
+        case '[]':
+            return `Read a non-empty sequence of characters in set to ${typ}`;
+        case 'd':
+            return `Read decimal integer to ${typ} as if by strtol(..., 10)`;
+        case 'i':
+            return `Read integer to ${typ} as if by strtol(..., 0)`;
+        case 'o':
+            return `Read integer to ${typ} as if by strtoul(..., 8)`;
+        case 'x':
+        case 'X':
+            return `Read integer to ${typ} as if by strtoul(..., 16)`;
+        case 'u':
+            return `Read decimal integer to ${typ} as if by strtoul(..., 10)`;
+        case 'f':
+        case 'F':
+        case 'e':
+        case 'E':
+        case 'a':
+        case 'A':
+        case 'g':
+        case 'G':
+            return `Read a floating-point number to ${typ} as if by strtof(...)`;
+        case 'n':
+            return `Store the number of characters read so far in ${typ}`;
+        case 'p':
+            return `Read an implementation-defined sequence defining a pointer to ${typ}`;
+    }
+}
+
+function printfSpecifierWithTypeToProseHeader(specifier, typ) {
     const cas = specifier.value === specifier.value.toUpperCase() ? 'upper-case'
         : 'lower-case';
 
