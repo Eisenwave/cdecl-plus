@@ -98,26 +98,25 @@ const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
 function printfArgsToProse(ast) {
-    let out = "";
-
-    let types = undefined;
-
-    for (let i = 0; i < ast.printfArgs.length; ++i) {
-        if (i === 0) {
-            const res = formatStringToProse(ast.printfArgs[i]);
-            out += res.prose;
-            types = res.types;
-            continue;
-        }
-        if (i === 1) {
-            out += ARGUMENTS_HEADER;
-        }
-
-        const typ = types[i - 1] ?? 'TOO MANY ARGUMENTS';
-        out += `\n${ast.printfArgs[i].replaceAll(' ', '')} (${typ})`;
+    if (ast.printfArgs.length === 0) {
+        throw {message: 'printf requires at least one argument'};
     }
 
-    return out;
+    let {prose, types} = formatStringToProse(ast.printfArgs[0]);
+    const expectedArgsCount = Math.max(ast.printfArgs.length, types.length + 1);
+
+    if (expectedArgsCount > 1) {
+        prose += ARGUMENTS_HEADER;
+    }
+
+
+    for (let i = 1; i < expectedArgsCount; ++i) {
+        const expr = ast.printfArgs[i]?.replaceAll(' ', '') ?? 'MISSING';
+        const typ = types[i - 1] ?? 'TOO MANY ARGUMENTS';
+        prose += `\n${expr} (${typ})`;
+    }
+
+    return prose;
 }
 
 function formatStringToProse(parts) {
