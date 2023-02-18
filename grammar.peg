@@ -14,6 +14,69 @@
   };
 }
 
+Main
+  = Declaration / PrintfCall
+
+PrintfCall "printf-call"
+  = _ ("::"? _ "std" _ "::" _)? "printf" _ "(" _ args:PrintfArguments? _ ")" {
+      return {"printfArgs": args ?? []}
+  }
+
+PrintfArguments
+  = head:PrintfFormatString tail:(_ "," _ PrintfArgument)* {
+      return reduceRightRecursion(head, tail);
+  }
+
+PrintfFormatString
+  = "\"" tokens:PrintfFormatToken* "\"" {
+      return tokens;
+  }
+
+PrintfFormatToken
+  = PrintfFormatSpecifier / PrintfLiteral
+
+PrintfFormatSpecifier
+  = "%"
+  flags: [-+ #0]*
+  width: PrintfFormatInteger?
+  prec:("." PrintfFormatInteger)?
+  length:PrintfLengthModifier
+  end:[%csdioxXufFeEaAgGnp]
+  {
+      return {
+          typ: "%",
+          flags,
+          width,
+          precision: prec?.[1] ?? null,
+          length,
+          value: end
+      };
+  }
+
+PrintfFormatInteger
+  = "*" / PrintfInteger
+
+PrintfInteger
+  = ("0" / [1-9][0-9]*) {
+    return Number(text());
+  }
+
+PrintfLengthModifier
+  = "hh" / "h" / "ll" / "l" / "j" / "z" / "t" / "L" / ""
+
+PrintfLiteral
+  = tokens:(&(![\"%]) .)+ {
+      return {
+          typ: "literal",
+          value: tokens.map(t => t[1]).join("")
+      };
+  }
+
+PrintfArgument
+  = [-+~&*! ]* Identifier {
+      return text().trim();
+  }
+
 Declaration "declaration"
   = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList _ ";"? {
     return {specifiers: declSpecs, declarators: list};
