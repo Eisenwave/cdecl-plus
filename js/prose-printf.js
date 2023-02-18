@@ -94,6 +94,9 @@ const PRINTF_TYPES = {
     'p': 'void*'
 };
 
+const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
+const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
+
 function printfArgsToProse(ast) {
     let out = "";
 
@@ -104,11 +107,14 @@ function printfArgsToProse(ast) {
             const res = formatStringToProse(ast.printfArgs[i]);
             out += res.prose;
             types = res.types;
-            console.log(types);
             continue;
         }
+        if (i === 1) {
+            out += ARGUMENTS_HEADER;
+        }
+
         const typ = types[i - 1] ?? 'TOO MANY ARGUMENTS';
-        out += `\n\n${printfArgumentToProse(ast.printfArgs[i], i)} (${typ})`;
+        out += `\n${ast.printfArgs[i].replaceAll(' ', '')} (${typ})`;
     }
 
     return out;
@@ -118,7 +124,7 @@ function formatStringToProse(parts) {
     const proses = parts.map(formatSpecifierToProse);
     return {
         prose: proses.map(p => p.prose).join('\n'),
-        types: proses.map(p => p.typ).filter(p => p)
+        types: proses.map(p => p.types).flat()
     };
 }
 
@@ -126,7 +132,7 @@ function formatSpecifierToProse(specifier) {
     if (specifier.typ === 'literal') {
         return {
             prose: `Write "${specifier.value}"`,
-            typ: null
+            types: []
         };
     }
 
@@ -136,13 +142,97 @@ function formatSpecifierToProse(specifier) {
     if (specifier.value !== '%' && !typ)
         throw {message: `Invalid format specifier %${typKey}`};
 
-    return {
-        prose: formatSpecifierWithTypeToProse(specifier, typ),
-        typ
-    };
+    const {header, details, types} = formatSpecifierWithTypeToProse(specifier, typ);
+    const indent = '    ';
+    const prose = header + (details.length ? '\n' + details.map(p => indent + p).join('\n') : '');
+
+    return {prose, types};
 }
 
+function printfFlagToProse(flag, kind) {
+    switch (flag) {
+        case '-':
+            return `left-justify within the field`;
+        case '+':
+            return `prepend plus sign for positive numbers`;
+        case ' ':
+            return `prepend space for positive numbers`;
+        case '0':
+            return 'zero-pad the field';
+        case '#':
+            switch (kind) {
+                case 'o':
+                    return 'minimum digit count increased automatically';
+                case 'x':
+                case 'X':
+                    return '"0x" is prefixed for nonzero numbers';
+                case 'f':
+                case 'F':
+                case 'e':
+                case 'E':
+                case 'a':
+                case 'A':
+                    return 'decimal point is always written';
+                case 'g':
+                case 'G':
+                    return 'preserve trailing zeros';
+                default:
+                    return 'invalid use of alternative flag';
+            }
+    }
+}
+
+function formatSpecifierFlagsToProse(specifier) {
+    const result = [];
+
+    const flagsSeen = new Set();
+    for (const flag of specifier.flags) {
+        if (!flagsSeen.has(flag)) {
+            result.push(`${flag}: ${printfFlagToProse(flag, specifier.value)}`);
+            flagsSeen.add(flag);
+        }
+    }
+
+    return result;
+}
+
+const PRECISION_MEANINGS = {
+    's': 'maximum string length',
+    'o': 'minimum digit count',
+    'x': 'minimum digit count',
+    'X': 'minimum digit count',
+    'u': 'minimum digit count',
+};
+
 function formatSpecifierWithTypeToProse(specifier, typ) {
+    const details = formatSpecifierFlagsToProse(specifier);
+    const header = formatSpecifierWithTypeToProseHeader(specifier, typ);
+    const types = [];
+    if (typ) {
+        types.push(typ);
+    }
+
+    if (typeof(specifier.width) === 'number') {
+        details.push(`field width: ${specifier.width}`);
+    }
+    else if (specifier.width === '*') {
+        types.push('int');
+        details.push('*: field width is read from int argument');
+    }
+
+    const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
+    if (typeof(specifier.precision) === 'number') {
+        details.push(`${precisionName}: ${specifier.precision}`);
+    }
+    else if (specifier.precision === '*') {
+        types.push('int');
+        details.push(`.*: ${precisionName} is read from int argument`);
+    }
+
+    return {header, details, types};
+}
+
+function formatSpecifierWithTypeToProseHeader(specifier, typ) {
     const cas = specifier.value === specifier.value.toUpperCase() ? 'upper-case'
         : 'lower-case';
 
@@ -183,8 +273,4 @@ function formatSpecifierWithTypeToProse(specifier, typ) {
         case 'p':
             return `Write an implementation-defined sequence defining a ${typ}`;
     }
-}
-
-function printfArgumentToProse(str, index) {
-    return `Arg ${index}: ${str.replaceAll(' ', '')}`;
 }
