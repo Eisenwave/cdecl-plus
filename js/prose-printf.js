@@ -200,10 +200,12 @@ const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
 function printfArgsToProse(ast) {
+    cdecl.showDiagnostic('printf');
     return formatArgsToProse(ast['printfArgs'], false);
 }
 
 function scanfArgsToProse(ast) {
+    cdecl.showDiagnostic('scanf');
     return formatArgsToProse(ast['scanfArgs'], true);
 }
 
@@ -370,9 +372,6 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
                            : printfSpecifierWithTypeToProseHeader(specifier, typ);
     const types = (isScanf ? scanfWidthToProse : printfFieldWidthToProse)(specifier, typ, details);
 
-    // FIXME: both assignment suppression and field width are currently
-    //        not supported
-
     if (!isScanf) {
         const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
         if (typeof(specifier.precision) === 'number') {
@@ -392,6 +391,23 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
                 `set ${incl} range ${range[0]}-${range[1]}`);
         }
     }
+
+    if (isScanf) {
+        if ((specifier.value === 's' || specifier.value === '[]') &&
+            specifier.width === null) {
+            cdecl.showDiagnostic('scanf-unbounded-string');
+        }
+        if (specifier.value === '%' && (specifier.supressed || specifier.width !== null || specifier.length)) {
+            cdecl.showDiagnostic('scanf-%%');
+        }
+    }
+    else {
+        if (specifier.value === '%' && (specifier.flags.length || specifier.width !== null || specifier.precision !== null || specifier.length)) {
+            cdecl.showDiagnostic('printf-%%');
+        }
+    }
+
+
 
     return {header, details, types};
 }

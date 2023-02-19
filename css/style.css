@@ -108,25 +108,27 @@ input:focus {
     border: 1px solid rgba(0, 144, 255, .35);
 }
 
-.d-error-text::before, .d-warning-text::before, .d-info-text::before {
+.d-error span::before,
+.d-warning span::before,
+.d-info span::before {
     background-size: 1.25em 1.25em;
     background-repeat: no-repeat;
     padding-left: 2em;
 }
 
-.d-error-text::before {
+.d-error span::before {
     content: 'Error: ';
     font-weight: bold;
     background-image: url('../img/error.png');
 }
 
-.d-warning-text::before {
+.d-warning span::before {
     content: 'Warning: ';
     font-weight: bold;
     background-image: url('../img/warning.png');
 }
 
-.d-info-text::before {
+.d-info span::before {
     content: 'Info: ';
     font-weight: bold;
     background-image: url('../img/info.png');
