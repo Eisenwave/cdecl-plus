@@ -231,7 +231,22 @@ function formatArgsToProse(args, isScanf) {
     return prose;
 }
 
+function isSpecifierSkippingWhitespace(spec) {
+    return spec.typ === 'whitespace' ||
+           spec.typ === '%' && spec.value !== 'c' && spec.value !== '[]';
+}
+
 function formatStringToProse(parts, isScanf) {
+    function isWhitespaceProblematic(p, i) {
+        if (isSpecifierSkippingWhitespace(p)) {
+            return false;
+        }
+        return i === 0 || parts[i - 1].typ !== 'whitespace';
+    }
+    if (isScanf && parts.find(isWhitespaceProblematic)) {
+        cdecl.showDiagnostic('scanf-leading-whitespace');
+    }
+
     const proses = parts.map(e => formatSpecifierToProse(e, isScanf));
     return {
         prose: proses.map(p => p.prose).join('\n'),
