@@ -341,6 +341,9 @@ function printfFieldWidthToProse(specifier, typ, details) {
 function scanfWidthToProse(specifier, typ, details) {
     const types = [];
 
+    if (specifier.supressed) {
+        details.push('*: suppress assignment');
+    }
     if (typeof(specifier.width) === 'number') {
         switch (specifier.value) {
             case 'c':
@@ -352,9 +355,6 @@ function scanfWidthToProse(specifier, typ, details) {
                 details.push(`${specifier.width}: INVALID USE OF STRING LENGTH`);
         }
     }
-    else if (specifier.width === '*') {
-        details.push('*: suppress assignment');
-    }
     else if (typ) {
         types.push(typ);
     }
@@ -363,7 +363,7 @@ function scanfWidthToProse(specifier, typ, details) {
 }
 
 function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
-    const details = isScanf ? specifier.flags.length ? ['INVALID USE OF PRINTF FLAGS IN SCANF'] : []
+    const details = isScanf ?  []
                             : formatSpecifierFlagsToProse(specifier);
 
     const header = isScanf ? scanfSpecifierWithTypeToProseHeader(specifier, typ)
@@ -373,12 +373,7 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
     // FIXME: both assignment suppression and field width are currently
     //        not supported
 
-    if (isScanf) {
-        if (specifier.precision) {
-            details.push(`${specifier.precision}: INVALID USE OF PRINTF PRECISION IN SCANF`);
-        }
-    }
-    else {
+    if (!isScanf) {
         const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
         if (typeof(specifier.precision) === 'number') {
             details.push(`${precisionName}: ${specifier.precision}`);

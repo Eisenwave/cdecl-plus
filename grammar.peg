@@ -10,29 +10,6 @@
       }
   };
 
-  function mergeLiteralsAndWhitespace(parts) {
-      const result = [];
-      let mergeNext = false;
-      for (const part of parts) {
-          if (part.typ === 'whitespace' || part.typ === 'literal') {
-              if (mergeNext) {
-                  result[result.length - 1].value += part.value;
-              }
-              else {
-                  part.typ = 'literal';
-                  result.push(part);
-              }
-              mergeNext = true;
-          }
-          else {
-              result.push(part);
-              mergeNext = false;
-          }
-      }
-
-      return result;
-  };
-
   const Type = {
     INT: 'i',
     UINT: 'u',
@@ -44,45 +21,70 @@
 }
 
 Main
-  = Declaration / FormatCall
+  = Declaration / PrintfCall / ScanfCall
 
-FormatCall "printf-scanf-call"
-  = _ ("::"? _ "std" _ "::" _)? id:("printf" / "scanf") _ "(" _ args:FormatArguments? _ ")" {
-      const key = id + "Args";
-      let result = args ?? [];
-      if (id === 'printf' && result.length !== 0) {
-          result[0] = mergeLiteralsAndWhitespace(result[0]);
-      }
-
-      return {[key]: result}
+PrintfCall "printf-call"
+  = FormatScope? "printf" _ "(" _ args:PrintfArguments? _ ")" {
+      return {printfArgs: args ?? []}
   }
 
-FormatArguments
-  = head:FormatString tail:(_ "," _ FormatArgument)* {
+ScanfCall "scanf-call"
+  = FormatScope? "scanf" _ "(" _ args:ScanfArguments? _ ")" {
+      return {scanfArgs: args ?? []}
+  }
+
+FormatScope
+  = _ ("::"? _ "std" _ "::" _)
+
+PrintfArguments
+  = head:PrintfFormatString tail:(_ "," _ FormatArgument)* {
       return reduceRightRecursion(head, tail);
   }
 
-FormatString
-  = "\"" tokens:FormatToken* "\"" {
+ScanfArguments
+  = head:ScanfFormatString tail:(_ "," _ FormatArgument)* {
+      return reduceRightRecursion(head, tail);
+  }
+
+PrintfFormatString
+  = "\"" tokens:PrintfFormatToken* "\"" {
       return tokens;
   }
 
-FormatToken
-  = FormatSpecifier / FormatWhitespace / FormatLiteral
+ScanfFormatString
+  = "\"" tokens:ScanfFormatToken* "\"" {
+      return tokens;
+  }
 
-FormatSpecifier
+PrintfFormatToken
+  = PrintfFormatSpecifier / PrintfFormatLiteral
+
+ScanfFormatToken
+  = ScanfFormatSpecifier / ScanfFormatWhitespace / ScanfFormatLiteral
+
+PrintfFormatSpecifier
   = "%"
   flags: [-+ #0]*
   width: FormatInteger?
   prec:("." FormatInteger)?
   length:FormatLengthModifier
-  end:FormatConversionSpecifier
+  value:PrintfConversionSpecifier
+  {
+      const precision = prec?.[1] ?? null;
+      return {typ: "%", flags, width, precision, length, value};
+  }
+
+ScanfFormatSpecifier
+  = "%"
+  sup: "*"?
+  width: FormatDecimalInteger?
+  length:FormatLengthModifier
+  end:ScanfConversionSpecifier
   {
       return {
           typ: "%",
-          flags,
+          supressed: Boolean(sup),
           width,
-          precision: prec?.[1] ?? null,
           length,
           value: typeof(end) === 'string' ? end : '[]',
           negated: Boolean(end.negated),
@@ -101,15 +103,15 @@ FormatDecimalInteger
 FormatLengthModifier
   = "hh" / "h" / "ll" / "l" / "j" / "z" / "t" / "L" / ""
 
-FormatWhitespace
-  = [ \t\n\r]+ {
+PrintfFormatLiteral
+  = [^\"%]+ {
       return {
-          typ: "whitespace",
+          typ: "literal",
           value: text()
       };
   }
 
-FormatLiteral
+ScanfFormatLiteral
   = [^ \t\n\r\"%]+ {
       return {
           typ: "literal",
@@ -117,10 +119,21 @@ FormatLiteral
       };
   }
 
-FormatConversionSpecifier
-  = [%csdioxXufFeEaAgGnp] / FormatCharacterSet
+ScanfFormatWhitespace
+  = [ \t\n\r]+ {
+      return {
+          typ: "whitespace",
+          value: text()
+      };
+  }
 
-FormatCharacterSet
+PrintfConversionSpecifier
+  = [%csdioxXufFeEaAgGnp]
+
+ScanfConversionSpecifier
+  = PrintfConversionSpecifier / ScanfCharacterSet
+
+ScanfCharacterSet
   = "[" n:"^"? ranges:(FormatSetRange / FormatSetSingleRange)* "]" {
       return {
           negated: Boolean(n),
@@ -139,14 +152,19 @@ FormatSetSingleRange
   }
 
 FormatSetCharacter
-  = c:[^\]] {
-      return c;
+  = escape:"\\"? c:[^\]] {
+      return text();
   }
 
 FormatArgument
   = [-+~&*! ]* Identifier {
       return text().trim();
   }
+
+
+
+
+// DECLARATIONS
 
 Declaration "declaration"
   = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList _ ";"? {
