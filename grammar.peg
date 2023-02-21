@@ -21,148 +21,61 @@
 }
 
 Main
-  = Declaration / PrintfCall / ScanfCall
+  = Declaration / FormatCall
 
-PrintfCall "printf-call"
-  = FormatScope? "printf" _ "(" _ args:PrintfArguments? _ ")" {
-      return {printfArgs: args ?? []}
-  }
-
-ScanfCall "scanf-call"
-  = FormatScope? "scanf" _ "(" _ args:ScanfArguments? _ ")" {
-      return {scanfArgs: args ?? []}
+FormatCall "printf-scanf-call"
+  = FormatScope?
+    fname:(PrintfFunctionName / ScanfFunctionName)
+    _ "(" _ args:FormatArguments? _ ")" {
+      return {
+      	  formatArgs: args ?? [],
+          functionName: fname
+      };
   }
 
 FormatScope
   = _ ("::"? _ "std" _ "::" _)
 
-PrintfArguments
-  = head:PrintfFormatString tail:(_ "," _ FormatArgument)* {
-      return reduceRightRecursion(head, tail);
-  }
-
-ScanfArguments
-  = head:ScanfFormatString tail:(_ "," _ FormatArgument)* {
-      return reduceRightRecursion(head, tail);
-  }
-
-PrintfFormatString
-  = "\"" tokens:PrintfFormatToken* "\"" {
-      return tokens;
-  }
-
-ScanfFormatString
-  = "\"" tokens:ScanfFormatToken* "\"" {
-      return tokens;
-  }
-
-PrintfFormatToken
-  = PrintfFormatSpecifier / PrintfFormatLiteral
-
-ScanfFormatToken
-  = ScanfFormatSpecifier / ScanfFormatWhitespace / ScanfFormatLiteral
-
-PrintfFormatSpecifier
-  = "%"
-  flags: [-+ #0]*
-  width: FormatInteger?
-  prec:("." FormatInteger)?
-  length:FormatLengthModifier
-  value:PrintfConversionSpecifier
-  {
-      const precision = prec?.[1] ?? null;
-      return {typ: "%", flags, width, precision, length, value};
-  }
-
-ScanfFormatSpecifier
-  = "%"
-  sup: "*"?
-  width: FormatDecimalInteger?
-  length:FormatLengthModifier
-  end:ScanfConversionSpecifier
-  {
-      return {
-          typ: "%",
-          supressed: Boolean(sup),
-          width,
-          length,
-          value: typeof(end) === 'string' ? end : '[]',
-          negated: Boolean(end.negated),
-          ranges: end.ranges ?? []
-      };
-  }
-
-FormatInteger
-  = "*" / FormatDecimalInteger
-
-FormatDecimalInteger
-  = ("0" / [1-9][0-9]*) {
-    return Number(text());
-  }
-
-FormatLengthModifier
-  = "hh" / "h" / "ll" / "l" / "j" / "z" / "t" / "L" / ""
-
-PrintfFormatLiteral
-  = [^\"%]+ {
-      return {
-          typ: "literal",
-          value: text()
-      };
-  }
-
-ScanfFormatLiteral
-  = [^ \t\n\r\"%]+ {
-      return {
-          typ: "literal",
-          value: text()
-      };
-  }
-
-ScanfFormatWhitespace
-  = [ \t\n\r]+ {
-      return {
-          typ: "whitespace",
-          value: text()
-      };
-  }
-
-PrintfConversionSpecifier
-  = [%csdioxXufFeEaAgGnp]
-
-ScanfConversionSpecifier
-  = PrintfConversionSpecifier / ScanfCharacterSet
-
-ScanfCharacterSet
-  = "[" n:"^"? ranges:(FormatSetRange / FormatSetSingleRange)* "]" {
-      return {
-          negated: Boolean(n),
-          ranges
-      };
-  }
-
-FormatSetRange
-  = start:FormatSetCharacter "-" end:FormatSetCharacter {
-      return [start, end];
-  }
-
-FormatSetSingleRange
-  = c:FormatSetCharacter {
-      return [c, c];
-  }
-
-FormatSetCharacter
-  = escape:"\\"? c:[^\]] {
+PrintfFunctionName
+  = ("f" / "s" / "sn")? "printf" "_s"? {
       return text();
   }
 
-FormatArgument
-  = [-+~&*! ]* Identifier {
-      return text().trim();
+ScanfFunctionName
+  = ("f" / "s")? "scanf" "_s"? {
+      return text();
   }
 
+FormatArguments
+  = head:FormatArgument tail:(_ "," _ FormatArgument)* {
+      return reduceRightRecursion(head, tail);
+  }
 
+FormatArgument
+  = StringLiteral / IdExpression
 
+StringLiteral
+  = '"' value:StringLiteralContents '"' {
+      return {
+          typ: "string",
+          // use base 64 encoding because PEG.js has issues with
+          // string escape characters
+          value: btoa(value)
+      };
+  }
+
+StringLiteralContents
+  = ('\\"' / "\\" c:[^"] / [^\"])* {
+      return text();
+  }
+
+IdExpression
+  = [-+~&*! ]* Identifier {
+      return {
+          typ: "expr",
+          value: text().trim()
+      };
+  }
 
 // DECLARATIONS
 

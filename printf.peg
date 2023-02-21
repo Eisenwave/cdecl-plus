@@ -1,0 +1,41 @@
+PrintfFormat
+  = tokens:PrintfFormatToken* {
+      return tokens;
+  }
+
+PrintfFormatToken
+  = PrintfFormatSpecifier / PrintfFormatLiteral
+
+PrintfFormatSpecifier
+  = "%"
+  flags: [-+ #0]*
+  width: FormatInteger?
+  prec:("." FormatInteger)?
+  length:FormatLengthModifier
+  value:PrintfConversionSpecifier
+  {
+      const precision = prec?.[1] ?? null;
+      return {typ: "%", flags, width, precision, length, value};
+  }
+
+FormatInteger
+  = "*" / FormatDecimalInteger
+
+FormatDecimalInteger
+  = ("0" / [1-9][0-9]*) {
+    return Number(text());
+  }
+
+FormatLengthModifier
+  = "hh" / "h" / "ll" / "l" / "j" / "z" / "t" / "L" / ""
+
+PrintfFormatLiteral
+  = [^\"%]+ {
+      return {
+          typ: "literal",
+          value: text()
+      };
+  }
+
+PrintfConversionSpecifier
+  = [%csdioxXufFeEaAgGnp]

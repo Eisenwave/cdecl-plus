@@ -221,11 +221,17 @@ function formatArgsToProse(args, isScanf) {
         prose += ARGUMENTS_HEADER;
     }
 
+    if (args.length - 1 < types.length) {
+        cdecl.showDiagnostic('format-not-enough-args');
+    }
+    else if (args.length - 1 > types.length) {
+        cdecl.showDiagnostic('format-too-many-args');
+    }
 
     for (let i = 1; i < expectedArgsCount; ++i) {
         const expr = args[i]?.replaceAll(' ', '') ?? 'MISSING';
-        const typ = types[i - 1] ?? 'TOO MANY ARGUMENTS';
-        prose += `\n${expr} (${typ})`;
+        const typ = types[i - 1] ? ` (${types[i - 1]})` : '';
+        prose += `\n${expr}${typ}`;
     }
 
     return prose;
