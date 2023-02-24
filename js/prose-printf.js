@@ -199,37 +199,35 @@ const SCANF_TYPES = {
 const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
-function printfArgsToProse(ast) {
-    cdecl.showDiagnostic('printf');
-    return formatArgsToProse(ast['printfArgs'], false);
-}
-
-function scanfArgsToProse(ast) {
-    cdecl.showDiagnostic('scanf');
-    return formatArgsToProse(ast['scanfArgs'], true);
-}
-
-function formatArgsToProse(args, isScanf) {
+function formatArgsToProse(functionName, args) {
     if (args.length === 0) {
         throw {message: 'printf requires at least one argument'};
     }
+    args.filter(arg => arg.typ === 'string')
+        .forEach(arg => arg.value = atob(arg.value));
 
-    let {prose, types} = formatStringToProse(args[0], isScanf);
+    const isScanf = functionName.includes('scanf');
+    const parser = isScanf ? SCANF_PARSER : PRINTF_PARSER;
+
+    let {prose, types} = formatStringToProse(parser.parse(args[0].value), isScanf);
     const expectedArgsCount = Math.max(args.length, types.length + 1);
 
-    if (expectedArgsCount > 1) {
+    const firstVaIndex = 1;
+    if (expectedArgsCount > firstVaIndex) {
         prose += ARGUMENTS_HEADER;
     }
 
-    if (args.length - 1 < types.length) {
+    const vaArgs = args.map(arg => arg.value);
+
+    if (vaArgs.length - firstVaIndex < types.length) {
         cdecl.showDiagnostic('format-not-enough-args');
     }
-    else if (args.length - 1 > types.length) {
+    else if (vaArgs.length - firstVaIndex > types.length) {
         cdecl.showDiagnostic('format-too-many-args');
     }
 
-    for (let i = 1; i < expectedArgsCount; ++i) {
-        const expr = args[i]?.replaceAll(' ', '') ?? 'MISSING';
+    for (let i = firstVaIndex; i < expectedArgsCount; ++i) {
+        const expr = vaArgs[i]?.replaceAll(' ', '') ?? 'MISSING';
         const typ = types[i - 1] ? ` (${types[i - 1]})` : '';
         prose += `\n${expr}${typ}`;
     }

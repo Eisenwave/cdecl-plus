@@ -42,7 +42,7 @@ function setOutput(output) {
 }
 
 function pegParse(input) {
-    return module.exports.parse(sanitizeInput(input));
+    return MAIN_PARSER.parse(sanitizeInput(input));
 }
 
 function sanitizeInput(input) {

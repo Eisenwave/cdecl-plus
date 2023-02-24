@@ -4,14 +4,9 @@ function astToProse(ast) {
     if (ast['declarators']) {
         return declarationsToProse(ast);
     }
-    else if (ast['printfArgs']) {
-        return printfArgsToProse(ast);
-    }
-    else if (ast['scanfArgs']) {
-        return scanfArgsToProse(ast);
+    else if (ast['functionName']) {
+        return formatArgsToProse(ast['functionName'], ast['formatArgs']);
     }
     throw {message: 'Empty AST'};
 }
-
-
 
