@@ -196,6 +196,26 @@ const SCANF_TYPES = {
     'p': 'void**'
 };
 
+const FORMAT_MIN_ARGS = {
+    scanf: 1,
+    fscanf: 2,
+    sscanf: 2,
+    scanf_s: 1,
+    fscanf_s: 2,
+    sscanf_s: 2,
+
+    printf: 1,
+    sprintf: 2,
+    fprintf: 2,
+    snprintf: 3,
+    printf_s: 1,
+    fprintf_s: 2,
+    sprintf_s: 3,
+    snprintf_s: 3
+};
+
+const NTH_ENGLISH = ['0th', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+
 const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
@@ -206,13 +226,32 @@ function formatArgsToProse(functionName, args) {
     args.filter(arg => arg.typ === 'string')
         .forEach(arg => arg.value = atob(arg.value));
 
+    cdecl.showDiagnostic(`${functionName}-io`);
+
     const isScanf = functionName.includes('scanf');
     const parser = isScanf ? SCANF_PARSER : PRINTF_PARSER;
+    const firstVaIndex = FORMAT_MIN_ARGS[functionName];
+    const formatString = args[firstVaIndex - 1];
 
-    let {prose, types} = formatStringToProse(parser.parse(args[0].value), isScanf);
-    const expectedArgsCount = Math.max(args.length, types.length + 1);
+    if (formatString.typ !== 'string') {
+        throw {message: `Expected format string for ${NTH_ENGLISH[firstVaIndex]} argument, got "${formatString.value}"`}
+    }
 
-    const firstVaIndex = 1;
+    let parsedFormat;
+    try {
+        parsedFormat = parser.parse(formatString.value);
+    } catch (e) {
+        if (e.name === 'SyntaxError') {
+            cdecl.showDiagnostic('format-syntax-error');
+            return '';
+        }
+        throw e;
+    }
+
+    let {prose, types} = formatStringToProse(parsedFormat, isScanf);
+    const expectedArgsCount = Math.max(args.length, types.length + firstVaIndex);
+
+
     if (expectedArgsCount > firstVaIndex) {
         prose += ARGUMENTS_HEADER;
     }
@@ -228,7 +267,8 @@ function formatArgsToProse(functionName, args) {
 
     for (let i = firstVaIndex; i < expectedArgsCount; ++i) {
         const expr = vaArgs[i]?.replaceAll(' ', '') ?? 'MISSING';
-        const typ = types[i - 1] ? ` (${types[i - 1]})` : '';
+        const typIndex = i - firstVaIndex;
+        const typ = types[typIndex] ? ` (${types[typIndex]})` : '';
         prose += `\n${expr}${typ}`;
     }
 

@@ -2,7 +2,6 @@ const INPUT = document.getElementById("input");
 const OUTPUT = document.getElementById("output");
 const DEBUG_OUTPUT = document.getElementById("debug-output");
 const DIAGNOSTICS = document.getElementById("diagnostics");
-const SyntaxError = module.exports.SyntaxError;
 
 function parseInput(input) {
     updatePageQuery(input);
@@ -19,7 +18,7 @@ function parseInput(input) {
         setOutput(processAst(ast));
     } catch (e) {
         const error = {isError: true, debug: e.message};
-        if (e instanceof SyntaxError) {
+        if (e.name === 'SyntaxError') {
             error.prose = 'Syntax Error';
         } else {
             error.prose = e.constructor.name + ': ' + e.message;
