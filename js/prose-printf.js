@@ -229,6 +229,8 @@ function formatArgsToProse(functionName, args) {
     cdecl.showDiagnostic(`${functionName}-io`);
 
     const isScanf = functionName.includes('scanf');
+    cdecl.showDiagnostic(isScanf ? 'scanf' : 'printf');
+
     const parser = isScanf ? SCANF_PARSER : PRINTF_PARSER;
     const firstVaIndex = FORMAT_MIN_ARGS[functionName];
     const formatString = args[firstVaIndex - 1];
