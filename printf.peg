@@ -10,11 +10,11 @@ PrintfFormatSpecifier
   = "%"
   flags: [-+ #0]*
   width: FormatInteger?
-  prec:("." FormatInteger)?
+  prec:("." FormatInteger?)?
   length:FormatLengthModifier
   value:PrintfConversionSpecifier
   {
-      const precision = prec?.[1] ?? null;
+      const precision = prec ? (prec[1] ?? '.') : null;
       return {typ: "%", flags, width, precision, length, value};
   }
 

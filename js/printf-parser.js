@@ -151,7 +151,7 @@ PRINTF_PARSER = /*
         peg$c5 = ".",
         peg$c6 = peg$literalExpectation(".", false),
         peg$c7 = function(flags, width, prec, length, value) {
-              const precision = prec?.[1] ?? null;
+              const precision = prec ? (prec[1] ?? '.') : null;
               return {typ: "%", flags, width, precision, length, value};
           },
         peg$c8 = "*",
@@ -405,6 +405,9 @@ PRINTF_PARSER = /*
             }
             if (s5 !== peg$FAILED) {
               s6 = peg$parseFormatInteger();
+              if (s6 === peg$FAILED) {
+                s6 = null;
+              }
               if (s6 !== peg$FAILED) {
                 s5 = [s5, s6];
                 s4 = s5;
