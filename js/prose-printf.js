@@ -229,12 +229,20 @@ function formatArgsToProse(functionName, args) {
     cdecl.showDiagnostic(`${functionName}-io`);
 
     const isScanf = functionName.includes('scanf');
+    const isSafe = functionName.endsWith('_s');
+
     cdecl.showDiagnostic(isScanf ? 'scanf' : 'printf');
+    if (isSafe) {
+        cdecl.showDiagnostic('format-bounds-checked')
+    }
 
     const parser = isScanf ? SCANF_PARSER : PRINTF_PARSER;
     const firstVaIndex = FORMAT_MIN_ARGS[functionName];
     const formatString = args[firstVaIndex - 1];
 
+    if (args.length < firstVaIndex) {
+        throw {message: `${functionName} requires at least ${firstVaIndex} arguments, got ${args.length}`};
+    }
     if (formatString.typ !== 'string') {
         throw {message: `Expected format string for ${NTH_ENGLISH[firstVaIndex]} argument, got "${formatString.value}"`}
     }
@@ -250,10 +258,15 @@ function formatArgsToProse(functionName, args) {
         throw e;
     }
 
-    let {prose, types} = formatStringToProse(parsedFormat, isScanf);
+    const {prose, types} = formatStringToProse(parsedFormat, isScanf, isSafe);
+
+    return prose + formatStringArgsToProse(args, firstVaIndex, types);
+}
+
+function formatStringArgsToProse(args, firstVaIndex, types) {
+    let prose = '';
+
     const expectedArgsCount = Math.max(args.length, types.length + firstVaIndex);
-
-
     if (expectedArgsCount > firstVaIndex) {
         prose += ARGUMENTS_HEADER;
     }
@@ -282,7 +295,7 @@ function isSpecifierSkippingWhitespace(spec) {
            spec.typ === '%' && spec.value !== 'c' && spec.value !== '[]';
 }
 
-function formatStringToProse(parts, isScanf) {
+function formatStringToProse(parts, isScanf, isSafe) {
     function isWhitespaceProblematic(p, i) {
         if (isSpecifierSkippingWhitespace(p)) {
             return false;
@@ -293,14 +306,14 @@ function formatStringToProse(parts, isScanf) {
         cdecl.showDiagnostic('scanf-leading-whitespace');
     }
 
-    const proses = parts.map(e => formatSpecifierToProse(e, isScanf));
+    const proses = parts.map(e => formatSpecifierToProse(e, isScanf, isSafe));
     return {
         prose: proses.map(p => p.prose).join('\n'),
         types: proses.map(p => p.types).flat()
     };
 }
 
-function formatSpecifierToProse(specifier, isScanf) {
+function formatSpecifierToProse(specifier, isScanf, isSafe) {
     if (specifier.typ === 'literal') {
         const prose = isScanf ? `Match "${specifier.value}"`
                               : `Write "${specifier.value}"`;
@@ -308,20 +321,19 @@ function formatSpecifierToProse(specifier, isScanf) {
     }
     if (specifier.typ === 'whitespace') {
         // can only appear in scanf, merged to literal in printf
-        return {
-            prose: `Match any amount of whitespace`,
-            types: []
-        }
+        const prose = `Match any amount of whitespace`;
+        return {prose, types: []};
     }
 
     const typKey = specifier.length + specifier.value;
     const typ = (isScanf ? SCANF_TYPES : PRINTF_TYPES)[typKey];
 
-    if (specifier.value !== '%' && !typ)
+    if (specifier.value !== '%' && !typ) {
         throw {message: `Invalid format specifier %${typKey}`};
+    }
 
     const {header, details, types}
-        = formatSpecifierWithTypeToProse(specifier, typ, isScanf);
+        = formatSpecifierWithTypeToProse(specifier, typ, isScanf, isSafe);
     const indent = '    ';
     const prose = header + (details.length ? '\n' + details.map(p => indent + p).join('\n') : '');
 
@@ -401,60 +413,48 @@ function printfFieldWidthToProse(specifier, typ, details) {
     return types;
 }
 
-function scanfWidthToProse(specifier, typ, details) {
+function scanfWidthToProse(specifier, typ, details, isSafe) {
     const types = [];
 
     if (specifier.supressed) {
         details.push('*: suppress assignment');
     }
     if (typeof(specifier.width) === 'number') {
-        switch (specifier.value) {
-            case 'c':
-            case 's':
-            case '[]':
-                details.push(`maximum string length: ${specifier.width}`);
-                break;
-            default:
-                details.push(`${specifier.width}: INVALID USE OF STRING LENGTH`);
-        }
+        details.push(`maximum field width: ${specifier.width} chars`);
     }
-    else if (typ) {
-        types.push(typ);
+    if (!specifier.supressed) {
+        if (typ) {
+            types.push(typ);
+        }
+        if (isSafe && ['s', 'c', '[]'].includes(specifier.value)) {
+            cdecl.showDiagnostic('rsize_t');
+            types.push('rsize_t');
+            details.push('_s: receiving buffer size is read from rsize_t argument');
+            if (typeof(specifier.width) === 'number') {
+                cdecl.showDiagnostic('scanf-max-field-width-_s')
+            }
+        }
     }
 
     return types;
 }
 
-function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
-    const details = isScanf ?  []
-                            : formatSpecifierFlagsToProse(specifier);
-
+function formatSpecifierWithTypeToProse(specifier, typ, isScanf, isSafe) {
+    const details = isScanf ? [] : formatSpecifierFlagsToProse(specifier);
     const header = isScanf ? scanfSpecifierWithTypeToProseHeader(specifier, typ)
                            : printfSpecifierWithTypeToProseHeader(specifier, typ);
-    const types = (isScanf ? scanfWidthToProse : printfFieldWidthToProse)(specifier, typ, details);
-
-    if (!isScanf) {
-        const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
-        if (typeof(specifier.precision) === 'number') {
-            details.push(`${precisionName}: ${specifier.precision}`);
-        }
-        else if (specifier.precision === '*') {
-            types.push('int');
-            details.push(`.*: ${precisionName} is read from int argument`);
-        }
-    }
-
-    if (isScanf && specifier.value === '[]') {
-        const incl = specifier.negated ? 'excludes' : 'includes';
-        for (const range of specifier.ranges) {
-            details.push(range[0] === range[1] ?
-                `set ${incl} ${range[0]}` :
-                `set ${incl} range ${range[0]}-${range[1]}`);
-        }
-    }
+    const types = (isScanf ? scanfWidthToProse : printfFieldWidthToProse)(specifier, typ, details, isSafe);
 
     if (isScanf) {
-        if ((specifier.value === 's' || specifier.value === '[]') &&
+        if (specifier.value === '[]') {
+            const incl = specifier.negated ? 'excludes' : 'includes';
+            for (const range of specifier.ranges) {
+                details.push(range[0] === range[1] ?
+                    `set ${incl} ${range[0]}` :
+                    `set ${incl} range ${range[0]}-${range[1]}`);
+            }
+        }
+        if (!isSafe && (specifier.value === 's' || specifier.value === '[]') &&
             specifier.width === null) {
             cdecl.showDiagnostic('scanf-unbounded-string');
         }
@@ -463,12 +463,19 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf) {
         }
     }
     else {
+        const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
+        if (typeof(specifier.precision) === 'number') {
+            details.push(`${precisionName}: ${specifier.precision}`);
+        }
+        else if (specifier.precision === '*') {
+            types.push('int');
+            details.push(`.*: ${precisionName} is read from int argument`);
+        }
+
         if (specifier.value === '%' && (specifier.flags.length || specifier.width !== null || specifier.precision !== null || specifier.length)) {
             cdecl.showDiagnostic('printf-%%');
         }
     }
-
-
 
     return {header, details, types};
 }

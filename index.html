@@ -118,6 +118,12 @@
                 </a>
             </span>
         </div>
+        <div id="d-scanf-max-field-width-_s" class="d-warning" hidden>
+            <span>Use of max field width AND receiving buffer size in _s functions is redundant</span>
+        </div>
+        <div id="d-format-bounds-checked" class="d-warning" hidden>
+            <span>Bounds-checked functions (_s) are optional (check #if __STDC_LIB_EXT1__ == 1)</span>
+        </div>
 
         <div id="d-printf-io" class="d-info" hidden>
             <span>printf outputs to
@@ -186,6 +192,16 @@
         </div>
         <div id="d-sscanf_s-io" class="d-info" hidden>
             <span>sscanf_s reads from the given null-terminated string (const char*)</span>
+        </div>
+
+        <div id="d-rsize_t" class="d-info" hidden>
+            <span>
+                <a href="https://port70.net/~nsz/c/c11/n1570.html#K.3.3p2" target="_blank">rsize_t</a>
+                is an alias for
+                <a href="https://port70.net/~nsz/c/c11/n1570.html#7.19p2" target="_blank">size_t</a>
+                with constraint
+                <a href="https://port70.net/~nsz/c/c11/n1570.html#K.3.4p2" target="_blank">RSIZE_MAX</a>
+            </span>
         </div>
 
         <div id="d-printf" class="d-info" hidden>
