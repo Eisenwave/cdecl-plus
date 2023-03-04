@@ -471,6 +471,9 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf, isSafe) {
             types.push('int');
             details.push(`.*: ${precisionName} is read from int argument`);
         }
+        else if (specifier.precision === '.') {
+            details.push(`.: ${precisionName} is taken as zero`)
+        }
 
         if (specifier.value === '%' && (specifier.flags.length || specifier.width !== null || specifier.precision !== null || specifier.length)) {
             cdecl.showDiagnostic('printf-%%');
