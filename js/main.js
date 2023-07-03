@@ -28,10 +28,22 @@ function parseInput(input) {
     }
 }
 
+/**
+ * Updates the page query given the content of the text input.
+ * @param {string} input the input string
+ * @return {void}
+ */
 function updatePageQuery(input) {
-    const urlStart = window.location.href.split('?');
-    const query = input.trim().length === 0 ? '' : '?decl=' + encodeURI(input);
-    window.history.replaceState({}, null, urlStart[0] + query);
+    input = input.trim();
+
+    let url = window.location.href.split('?')[0];
+    if (input.length !== 0) {
+        url += '?q=';
+        url += encodeURI(input)
+            .replaceAll('&', '%26');
+    }
+
+    window.history.replaceState({}, null, url);
 }
 
 function setOutput(output) {
@@ -59,24 +71,35 @@ function processAst(ast) {
     }
 }
 
+/**
+ * Hides or unhides all diagnostics.
+ * @param {boolean} hidden true if diagnostics should be hidden
+ */
 function setDiagnosticsHidden(hidden = true) {
     for (const child of DIAGNOSTICS.children) {
         child.hidden = hidden;
     }
 }
 
-
+/**
+ * Displays or hides a diagnostic element.
+ * @param {string} id the element id
+ * @param {boolean} shown true if the element should be shown
+ * @return {void}
+ */
 function showDiagnostic(id, shown = true) {
     const element = document.getElementById('d-' + id);
     element.hidden = !shown;
 }
 
-
 window.addEventListener('load', () => {
     const urlSearchParams = new URLSearchParams(window.location.search);
-    const decl = urlSearchParams.get('decl');
-    if (decl !== null) {
-        INPUT.value = decl;
-        parseInput(INPUT.value);
+
+    for (const param of ['q', 'decl']) {
+        const value = urlSearchParams.get(param);
+        if (value !== null) {
+            INPUT.value = value;
+            parseInput(INPUT.value);
+        }
     }
 })
