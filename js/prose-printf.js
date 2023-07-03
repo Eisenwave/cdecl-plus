@@ -243,7 +243,6 @@ const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
 /**
- *
  * Converts a call to a scanf/printf family function to prose.
  * @param {string} functionName the function name
  * @param {ConvSpecification[]} args the arguments, where string arguments are base-64 encoded
@@ -466,7 +465,7 @@ function printfFieldWidthToProse(specifier, typ, details) {
     const extraTypes = [];
 
     if (typeof(specifier.width) === 'number') {
-        details.push(`field width: ${specifier.width}`);
+        details.push(`${specifier.width}: field width`);
     }
     else if (specifier.width === '*') {
         extraTypes.push('int');
@@ -489,7 +488,7 @@ function scanfWidthToProse(specifier, typ, details, isSafe) {
         details.push('*: suppress assignment');
     }
     if (typeof(specifier.width) === 'number') {
-        details.push(`maximum field width: ${specifier.width} chars`);
+        details.push(`${specifier.width}: maximum field width (in characters)`);
     }
     if (specifier.supressed) {
         return {typ: null, extraTypes: []};
