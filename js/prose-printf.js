@@ -1,3 +1,5 @@
+"use strict";
+
 const PRINTF_TYPES = {
     'c': 'int',
     'lc': 'wint_t',
@@ -196,6 +198,27 @@ const SCANF_TYPES = {
     'p': 'void**'
 };
 
+const NUMBER_PRECISION_MEANING = "minimum digit count (left-pad with '0')";
+const FLOATING_PRECISION_MEANING = "number of fractional digits";
+
+const PRECISION_MEANINGS = {
+    's': 'maximum string length',
+    'd': NUMBER_PRECISION_MEANING,
+    'i': NUMBER_PRECISION_MEANING,
+    'o': NUMBER_PRECISION_MEANING,
+    'x': NUMBER_PRECISION_MEANING,
+    'X': NUMBER_PRECISION_MEANING,
+    'u': NUMBER_PRECISION_MEANING,
+    'f': FLOATING_PRECISION_MEANING,
+    'F': FLOATING_PRECISION_MEANING,
+    'e': FLOATING_PRECISION_MEANING,
+    'E': FLOATING_PRECISION_MEANING,
+    'a': FLOATING_PRECISION_MEANING,
+    'A': FLOATING_PRECISION_MEANING,
+    'g': FLOATING_PRECISION_MEANING,
+    'G': FLOATING_PRECISION_MEANING,
+};
+
 const FORMAT_MIN_ARGS = {
     scanf: 1,
     fscanf: 2,
@@ -219,6 +242,14 @@ const NTH_ENGLISH = ['0th', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8t
 const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
 const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
+/**
+ *
+ * Converts a call to a scanf/printf family function to prose.
+ * @param {string} functionName the function name
+ * @param {ConvSpecification[]} args the arguments, where string arguments are base-64 encoded
+ * @returns {string} the prose
+ * @typedef {{typ: string, value: string}} ConvSpecification
+ */
 function formatArgsToProse(functionName, args) {
     if (args.length === 0) {
         throw {message: 'printf requires at least one argument'};
@@ -263,6 +294,13 @@ function formatArgsToProse(functionName, args) {
     return prose + formatStringArgsToProse(args, firstVaIndex, types);
 }
 
+/**
+ * Converts format string arguments to prose.
+ * @param {{value: string}[]} args the arguments
+ * @param {number} firstVaIndex the index of the first variadic argument to the function
+ * @param {string[]} types the list of expected argument types
+ * @returns {string}
+ */
 function formatStringArgsToProse(args, firstVaIndex, types) {
     let prose = '';
 
@@ -290,11 +328,23 @@ function formatStringArgsToProse(args, firstVaIndex, types) {
     return prose;
 }
 
+/**
+ * Returns true if a specifier skips leading whitespace automatically.
+ * @param {{typ: string, value: string}} spec the specification
+ * @returns {boolean}
+ */
 function isSpecifierSkippingWhitespace(spec) {
     return spec.typ === 'whitespace' ||
            spec.typ === '%' && spec.value !== 'c' && spec.value !== '[]';
 }
 
+/**
+ * Converts a format string to prose.
+ * @param {*[]} parts the literal and format specifier parts of the prose
+ * @param {boolean} isScanf true if this is a scanf function
+ * @param {boolean} isSafe true if this is a safe function (_s)
+ * @returns {{prose: Object, types: FlatArray<*, 1>[]}}
+ */
 function formatStringToProse(parts, isScanf, isSafe) {
     function isWhitespaceProblematic(p, i) {
         if (isSpecifierSkippingWhitespace(p)) {
@@ -313,6 +363,13 @@ function formatStringToProse(parts, isScanf, isSafe) {
     };
 }
 
+/**
+ * Converts a conversion specifier to prose and type information of the arguments.
+ * @param {{typ: string, length: string, value:string}} specifier the specifier object
+ * @param {boolean} isScanf true if this is a scanf family function
+ * @param {boolean} isSafe true if this is a safe function (_s)
+ * @returns {{prose: string, types: string[]}}
+ */
 function formatSpecifierToProse(specifier, isScanf, isSafe) {
     if (specifier.typ === 'literal') {
         const prose = isScanf ? `Match "${specifier.value}"`
@@ -340,6 +397,12 @@ function formatSpecifierToProse(specifier, isScanf, isSafe) {
     return {prose, types};
 }
 
+/**
+ * Converts a printf flag to prose.
+ * @param {string} flag the flag
+ * @param {string} kind the kind of format specifier (s, d, etc.)
+ * @returns {string} the prose
+ */
 function printfFlagToProse(flag, kind) {
     switch (flag) {
         case '-':
@@ -373,6 +436,11 @@ function printfFlagToProse(flag, kind) {
     }
 }
 
+/**
+ * Converts conversion specification flags to prose, ignoring any duplicates.
+ * @param {Object} specifier the specification object
+ * @returns {string[]} an array of prose for each flag
+ */
 function formatSpecifierFlagsToProse(specifier) {
     const result = [];
 
@@ -387,63 +455,72 @@ function formatSpecifierFlagsToProse(specifier) {
     return result;
 }
 
-const PRECISION_MEANINGS = {
-    's': 'maximum string length',
-    'o': 'minimum digit count',
-    'x': 'minimum digit count',
-    'X': 'minimum digit count',
-    'u': 'minimum digit count',
-};
-
+/**
+ * Converts the field width of a conversion specification to prose.
+ * @param {Object} specifier the specification object
+ * @param {string?} typ the specifier type, if any
+ * @param {string[]} details the output list of detail prose for the specifier
+ * @returns {{typ: string | null, extraTypes: string[]}}
+ */
 function printfFieldWidthToProse(specifier, typ, details) {
-    const types = [];
-
-    if (typ) {
-        types.push(typ);
-    }
+    const extraTypes = [];
 
     if (typeof(specifier.width) === 'number') {
         details.push(`field width: ${specifier.width}`);
     }
     else if (specifier.width === '*') {
-        types.push('int');
+        extraTypes.push('int');
         details.push('*: field width is read from int argument');
     }
 
-    return types;
+    return {typ: typ ?? null, extraTypes};
 }
 
+/**
+ * Converts the scanf conversion specification width to prose.
+ * @param {Object} specifier the specification object
+ * @param {string?} typ the type, if any
+ * @param {string[]} details the output details list
+ * @param {boolean} isSafe true if this is for a safe (_s) function
+ * @returns {{typ: string | null, extraTypes: string[]}}
+ */
 function scanfWidthToProse(specifier, typ, details, isSafe) {
-    const types = [];
-
     if (specifier.supressed) {
         details.push('*: suppress assignment');
     }
     if (typeof(specifier.width) === 'number') {
         details.push(`maximum field width: ${specifier.width} chars`);
     }
-    if (!specifier.supressed) {
-        if (typ) {
-            types.push(typ);
-        }
-        if (isSafe && ['s', 'c', '[]'].includes(specifier.value)) {
-            cdecl.showDiagnostic('rsize_t');
-            types.push('rsize_t');
-            details.push('_s: receiving buffer size is read from rsize_t argument');
-            if (typeof(specifier.width) === 'number') {
-                cdecl.showDiagnostic('scanf-max-field-width-_s')
-            }
+    if (specifier.supressed) {
+        return {typ: null, extraTypes: []};
+    }
+
+    const extraTypes = [];
+    if (isSafe && ['s', 'c', '[]'].includes(specifier.value)) {
+        cdecl.showDiagnostic('rsize_t');
+        extraTypes.push('rsize_t');
+        details.push('_s: receiving buffer size is read from rsize_t argument');
+        if (typeof(specifier.width) === 'number') {
+            cdecl.showDiagnostic('scanf-max-field-width-_s')
         }
     }
 
-    return types;
+    return {typ: typ ?? null, extraTypes}
 }
 
+/**
+ * Returns the prose of a single format specifier, with the type already determined.
+ * @param specifier the format specifier object
+ * @param {string?} typ the type of the format specifier, if any (may be undefined for %n)
+ * @param {boolean} isScanf true if this is a scanf format specifier
+ * @param {boolean} isSafe true
+ * @returns {{types: string[], header: string, details: string[]}}
+ */
 function formatSpecifierWithTypeToProse(specifier, typ, isScanf, isSafe) {
     const details = isScanf ? [] : formatSpecifierFlagsToProse(specifier);
     const header = isScanf ? scanfSpecifierWithTypeToProseHeader(specifier, typ)
                            : printfSpecifierWithTypeToProseHeader(specifier, typ);
-    const types = (isScanf ? scanfWidthToProse : printfFieldWidthToProse)(specifier, typ, details, isSafe);
+    const typesObj = (isScanf ? scanfWidthToProse : printfFieldWidthToProse)(specifier, typ, details, isSafe);
 
     if (isScanf) {
         if (specifier.value === '[]') {
@@ -468,7 +545,7 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf, isSafe) {
             details.push(`${precisionName}: ${specifier.precision}`);
         }
         else if (specifier.precision === '*') {
-            types.push('int');
+            typesObj.extraTypes.push('int');
             details.push(`.*: ${precisionName} is read from int argument`);
         }
         else if (specifier.precision === '.') {
@@ -480,9 +557,20 @@ function formatSpecifierWithTypeToProse(specifier, typ, isScanf, isSafe) {
         }
     }
 
+    const types = typesObj.extraTypes;
+    if (typesObj.typ !== null) {
+        types.push(typesObj.typ);
+    }
+
     return {header, details, types};
 }
 
+/**
+ * Converts a scanf conversion specification object to prose.
+ * @param {{typ: string, width: number | '*', value: string}} specifier the specification object
+ * @param {string?} typ the type, if any
+ * @returns {string}
+ */
 function scanfSpecifierWithTypeToProseHeader(specifier, typ) {
     switch (specifier.value) {
         case '%':
@@ -522,6 +610,12 @@ function scanfSpecifierWithTypeToProseHeader(specifier, typ) {
     }
 }
 
+/**
+ * Converts a printf conversion specification to a prose header.
+ * @param {{typ: string, length: string, value: string}} specifier the specification
+ * @param {string?} typ the type, if any
+ * @returns {string}
+ */
 function printfSpecifierWithTypeToProseHeader(specifier, typ) {
     const cas = specifier.value === specifier.value.toUpperCase() ? 'upper-case'
         : 'lower-case';
