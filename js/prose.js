@@ -1,3 +1,5 @@
+"use strict";
+
 const cdecl = {showDiagnostic: id => showDiagnostic(id)};
 
 function astToProse(ast) {
