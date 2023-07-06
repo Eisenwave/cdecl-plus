@@ -219,22 +219,22 @@ const PRECISION_MEANINGS = {
     'G': FLOATING_PRECISION_MEANING,
 };
 
-const FORMAT_MIN_ARGS = {
-    scanf: 1,
-    fscanf: 2,
-    sscanf: 2,
-    scanf_s: 1,
-    fscanf_s: 2,
-    sscanf_s: 2,
+const FORMAT_FUNCTION_PREFIX_TYPES = {
+    scanf: [],
+    fscanf: ["FILE*"],
+    sscanf: ["const char*"],
+    scanf_s: [],
+    fscanf_s: ["FILE*"],
+    sscanf_s: ["const char*"],
 
-    printf: 1,
-    sprintf: 2,
-    fprintf: 2,
-    snprintf: 3,
-    printf_s: 1,
-    fprintf_s: 2,
-    sprintf_s: 3,
-    snprintf_s: 3
+    printf: [],
+    sprintf: ["char*"],
+    fprintf: ["FILE*"],
+    snprintf: ["char*", "size_t"],
+    printf_s: [],
+    fprintf_s: ["FILE*"],
+    sprintf_s: ["char*", "rsize_t"],
+    snprintf_s: ["char*", "rsize_t"]
 };
 
 const NTH_ENGLISH = ['0th', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
@@ -267,7 +267,8 @@ function formatArgsToProse(functionName, args) {
     }
 
     const parser = isScanf ? SCANF_PARSER : PRINTF_PARSER;
-    const firstVaIndex = FORMAT_MIN_ARGS[functionName];
+    const prefixTypes = FORMAT_FUNCTION_PREFIX_TYPES[functionName];
+    const firstVaIndex = prefixTypes.length + 1;
     const formatString = args[firstVaIndex - 1];
 
     if (args.length < firstVaIndex) {
@@ -289,8 +290,9 @@ function formatArgsToProse(functionName, args) {
     }
 
     const {prose, types} = formatStringToProse(parsedFormat, isScanf, isSafe);
+    const allTypes = [...prefixTypes, ...types];
 
-    return prose + formatStringArgsToProse(args, firstVaIndex, types);
+    return prose + formatStringArgsToProse(args, firstVaIndex, allTypes);
 }
 
 /**
@@ -301,27 +303,26 @@ function formatArgsToProse(functionName, args) {
  * @returns {string}
  */
 function formatStringArgsToProse(args, firstVaIndex, types) {
-    let prose = '';
 
-    const expectedArgsCount = Math.max(args.length, types.length + firstVaIndex);
-    if (expectedArgsCount > firstVaIndex) {
-        prose += ARGUMENTS_HEADER;
-    }
+    const relevantArgsCount = Math.max(args.length, types.length + 1);
 
-    const vaArgs = args.map(arg => arg.value);
-
-    if (vaArgs.length - firstVaIndex < types.length) {
+    if (args.length < types.length + 1) {
         cdecl.showDiagnostic('format-not-enough-args');
     }
-    else if (vaArgs.length - firstVaIndex > types.length) {
+    else if (args.length > types.length + 1) {
         cdecl.showDiagnostic('format-too-many-args');
     }
 
-    for (let i = firstVaIndex; i < expectedArgsCount; ++i) {
-        const expr = vaArgs[i]?.replaceAll(' ', '') ?? 'MISSING';
-        const typIndex = i - firstVaIndex;
-        const typ = types[typIndex] ? ` (${types[typIndex]})` : '';
-        prose += `\n${expr}${typ}`;
+    let prose = relevantArgsCount > 1 ? ARGUMENTS_HEADER : '';
+
+    for (let i = 0, t = 0; i < relevantArgsCount; ++i) {
+        if (i + 1 === firstVaIndex) {
+            continue; // skip format string, but keep all args before/after
+        }
+
+        const expr = args[i]?.value.replaceAll(' ', '') ?? 'MISSING';
+        const typ = types[t++];
+        prose += `\n${expr}${typ ? ` (${typ})` : ''}`;
     }
 
     return prose;
