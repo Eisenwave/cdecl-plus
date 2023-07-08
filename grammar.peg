@@ -26,7 +26,7 @@ Main
 FormatCall "printf-scanf-call"
   = FormatScope?
     fname:(PrintfFunctionName / ScanfFunctionName)
-    _ "(" _ args:FormatArguments? _ ")" {
+    _ "(" _ args:FormatArguments? _ ")" (_ ";")* _ {
       return {
       	  formatArgs: args ?? [],
           functionName: fname
@@ -42,7 +42,7 @@ PrintfFunctionName
   }
 
 ScanfFunctionName
-  = ("f" / "s")? "scanf" "_s"? {
+  = ("scanf" / "fscanf" / "sscanf") "_s"? {
       return text();
   }
 
@@ -80,7 +80,7 @@ IdExpression
 // DECLARATIONS
 
 Declaration "declaration"
-  = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList _ ";"? {
+  = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList (_ ";")* _ {
     return {specifiers: declSpecs, declarators: list};
   }
 
