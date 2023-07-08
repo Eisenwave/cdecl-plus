@@ -1,5 +1,7 @@
 const INPUT = document.getElementById("input");
-const OUTPUT = document.getElementById("output");
+const EXAMPLES = document.getElementById("examples");
+const EXAMPLES_LIST = document.getElementById("examples-list");
+const PROSE = document.getElementById("prose");
 const DEBUG_OUTPUT = document.getElementById("debug-output");
 const DIAGNOSTICS = document.getElementById("diagnostics");
 
@@ -48,8 +50,19 @@ function updatePageQuery(input) {
 
 function setOutput(output) {
     INPUT.className = output.isError ? 'error' : '';
-    OUTPUT.innerText = output.prose;
+    PROSE.innerText = output.prose;
     DEBUG_OUTPUT.innerText = output.debug;
+
+    if (output.prose.trim().length !== 0) {
+        EXAMPLES.classList.remove('fade-in');
+        EXAMPLES.style.display = 'none';
+        PROSE.style.opacity = '1';
+    }
+    else {
+        EXAMPLES.classList.add('fade-in');
+        EXAMPLES.style.display = 'block';
+        PROSE.style.opacity = '0';
+    }
 }
 
 function pegParse(input) {
@@ -103,3 +116,9 @@ window.addEventListener('load', () => {
         }
     }
 })
+
+for (const li of EXAMPLES_LIST.childNodes) {
+    li.addEventListener('click', () => {
+        parseInput(INPUT.value = li.innerText);
+    })
+}

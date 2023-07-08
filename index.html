@@ -20,7 +20,24 @@
     <h1>cdecl+</h1>
     <h2>C Declarations &amp; printf/scanf &#10132; Prose</h2>
     <input id="input" autocomplete="off" spellcheck="false" autofocus oninput="parseInput(this.value)"/>
-    <p id="output"></p>
+
+    <div id="output">
+        <div id="examples">
+            <b>Examples:</b>
+            <ul id="examples-list">
+                <li>char const * const</li>
+                <li>int(*(*)[10])()</li>
+                <li>typedef struct s {} s, *sptr</li>
+                <li>int(*(*arr)[10])()</li>
+                <li>void &(int[*]) _Atomic [0]</li>
+                <li>fprintf(stderr, "%#*.*LF", width, precision, number)</li>
+                <li>scanf("%4d/%2d/%2d", &year, &month, &day)</li>
+            </ul>
+        </div>
+        <div id="prose"></div>
+    </div>
+
+
     <div id="diagnostics">
         <div id="d-returning-array" class="d-error" hidden>
             <span>Return type may not be an array</span>
@@ -111,8 +128,15 @@
                 </a>
             </span>
         </div>
+        <div id="d-scanf-leading-whitespace-literal" class="d-warning" hidden>
+            <span>literals do not consume leading whitespace,
+                <a href="https://stackoverflow.com/q/26391465">
+                    which may be a pitfall here
+                </a>
+            </span>
+        </div>
         <div id="d-scanf-leading-whitespace" class="d-warning" hidden>
-            <span>literals, %c and %[] do not consume leading whitespace,
+            <span>%c and %[] do not consume leading whitespace,
                 <a href="https://stackoverflow.com/q/26391465">
                     which may be a pitfall here
                 </a>

@@ -340,20 +340,24 @@ function isSpecifierSkippingWhitespace(spec) {
 
 /**
  * Converts a format string to prose.
- * @param {*[]} parts the literal and format specifier parts of the prose
+ * @param {{typ: string, value: string}[]} parts the literal and format specifier parts of the prose
  * @param {boolean} isScanf true if this is a scanf function
  * @param {boolean} isSafe true if this is a safe function (_s)
  * @returns {{prose: Object, types: FlatArray<*, 1>[]}}
  */
 function formatStringToProse(parts, isScanf, isSafe) {
-    function isWhitespaceProblematic(p, i) {
-        if (isSpecifierSkippingWhitespace(p)) {
-            return false;
+    if (isScanf) {
+        const wsUnsafeParts = parts.filter((p, i) => {
+            return !isSpecifierSkippingWhitespace(p) &&
+                (i === 0 || parts[i - 1].typ !== 'whitespace');
+        })
+
+        if (wsUnsafeParts.find(p => p.typ === 'literal')) {
+            cdecl.showDiagnostic('scanf-leading-whitespace-literal');
         }
-        return i === 0 || parts[i - 1].typ !== 'whitespace';
-    }
-    if (isScanf && parts.find(isWhitespaceProblematic)) {
-        cdecl.showDiagnostic('scanf-leading-whitespace');
+        if (wsUnsafeParts.find(p => p.typ !== 'literal')) {
+            cdecl.showDiagnostic('scanf-leading-whitespace');
+        }
     }
 
     const proses = parts.map(e => formatSpecifierToProse(e, isScanf, isSafe));
