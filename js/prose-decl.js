@@ -41,6 +41,11 @@ const SPECIFIER_ORDERING = [
     '_Atomic()', 'struct', 'class', 'enum', 'void', 'bool', 'char', 'short', 'long', 'int', 'float', 'double'
 ];
 
+/**
+ * Converts an AST to prose.
+ * @param {Object} ast the abstract syntax tree
+ * @return {string[]} an array of paragraphs
+ */
 function declarationsToProse(ast) {
     if (ast.declarators.length === 0) {
         throw {message: 'Nothing declared'};
@@ -48,12 +53,14 @@ function declarationsToProse(ast) {
 
     const specifiersProse = specifiersToProse(ast.specifiers, 'top-level');
 
-    const declarationProses = [];
+    const paragraphs = [];
     for (const declarator of ast.declarators) {
-        declarationProses.push(declarationWithKnownSpecifiersToProse(specifiersProse, declarator, 'top-level'));
+        const paragraph = declarationWithKnownSpecifiersToProse(specifiersProse, declarator, 'top-level')
+                            .replace(/ +/g, ' ');
+        paragraphs.push(paragraph);
     }
 
-    return declarationProses.join('\n\n').replace(/ +/g, ' ');
+    return paragraphs;
 }
 
 function declarationToProse(specifiers, declarator, kind) {

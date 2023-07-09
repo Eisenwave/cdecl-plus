@@ -9,7 +9,7 @@ function parseInput(input) {
     updatePageQuery(input);
 
     if (input.trim().length === 0) {
-        setOutput({isError: false, prose: '', debug: ''});
+        hideOutput();
         setDiagnosticsHidden();
         return;
     }
@@ -50,19 +50,20 @@ function updatePageQuery(input) {
 
 function setOutput(output) {
     INPUT.className = output.isError ? 'error' : '';
+
     PROSE.innerText = output.prose;
+    PROSE.style.opacity = '1';
+
     DEBUG_OUTPUT.innerText = output.debug;
 
-    if (output.prose.trim().length !== 0) {
-        EXAMPLES.classList.remove('fade-in');
-        EXAMPLES.style.display = 'none';
-        PROSE.style.opacity = '1';
-    }
-    else {
-        EXAMPLES.classList.add('fade-in');
-        EXAMPLES.style.display = 'block';
-        PROSE.style.opacity = '0';
-    }
+    EXAMPLES.classList.remove('fade-in');
+    EXAMPLES.style.display = 'none';
+}
+
+function hideOutput() {
+    EXAMPLES.classList.add('fade-in');
+    EXAMPLES.style.display = 'block';
+    PROSE.style.opacity = '0';
 }
 
 function pegParse(input) {

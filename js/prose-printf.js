@@ -240,19 +240,16 @@ const FORMAT_FUNCTION_PREFIX_TYPES = {
 const NTH_ENGLISH = ['0th', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
 
 const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
-const ARGUMENTS_HEADER = `\n\n${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
+const ARGUMENTS_HEADER = `${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
 /**
  * Converts a call to a scanf/printf family function to prose.
  * @param {string} functionName the function name
  * @param {ConvSpecification[]} args the arguments, where string arguments are base-64 encoded
- * @returns {string} the prose
- * @typedef {{typ: string, value: string}} ConvSpecification
+ * @returns {string[]} the prose paragraphs
+ * @typedef {{typ: string, length: string, value: string}} ConvSpecification
  */
 function formatArgsToProse(functionName, args) {
-    if (args.length === 0) {
-        throw {message: 'printf requires at least one argument'};
-    }
     args.filter(arg => arg.typ === 'string')
         .forEach(arg => arg.value = atob(arg.value));
 
@@ -278,29 +275,40 @@ function formatArgsToProse(functionName, args) {
         throw {message: `Expected format string for ${NTH_ENGLISH[firstVaIndex]} argument, got "${formatString.value}"`}
     }
 
-    let parsedFormat;
-    try {
-        parsedFormat = parser.parse(formatString.value);
-    } catch (e) {
-        if (e.name === 'SyntaxError') {
-            cdecl.showDiagnostic('format-syntax-error');
-            return '';
+    /**
+     * @type {ConvSpecification[]|undefined}
+     */
+    const parsedFormat = function() {
+        try {
+            return parser.parse(formatString.value);
+        } catch (e) {
+            // syntax errors in format strings turn into an error diagnostics,
+            // not into hard error
+            if (e.name === 'SyntaxError') {
+                cdecl.showDiagnostic('format-syntax-error');
+                return undefined;
+            }
+            // anything but a syntax error gets rethrown
+            throw e;
         }
-        throw e;
+    }();
+    if (parsedFormat === undefined) {
+        return [];
     }
 
     const {prose, types} = formatStringToProse(parsedFormat, isScanf, isSafe);
     const allTypes = [...prefixTypes, ...types];
+    const argsProse = formatStringArgsToProse(args, firstVaIndex, allTypes);
 
-    return prose + formatStringArgsToProse(args, firstVaIndex, allTypes);
+    return [prose, argsProse].filter(p => p.length !== 0);
 }
 
 /**
  * Converts format string arguments to prose.
- * @param {{value: string}[]} args the arguments
+ * @param {ConvSpecification[]} args the arguments
  * @param {number} firstVaIndex the index of the first variadic argument to the function
  * @param {string[]} types the list of expected argument types
- * @returns {string}
+ * @returns {string} the arguments prose, or an empty string
  */
 function formatStringArgsToProse(args, firstVaIndex, types) {
 
@@ -313,7 +321,11 @@ function formatStringArgsToProse(args, firstVaIndex, types) {
         cdecl.showDiagnostic('format-too-many-args');
     }
 
-    let prose = relevantArgsCount > 1 ? ARGUMENTS_HEADER : '';
+    // format string is included in count, so 1 argument is still not enough
+    if (relevantArgsCount < 2) {
+        return '';
+    }
+    let prose = ARGUMENTS_HEADER;
 
     for (let i = 0, t = 0; i < relevantArgsCount; ++i) {
         if (i + 1 === firstVaIndex) {
@@ -330,7 +342,7 @@ function formatStringArgsToProse(args, firstVaIndex, types) {
 
 /**
  * Returns true if a specifier skips leading whitespace automatically.
- * @param {{typ: string, value: string}} spec the specification
+ * @param {ConvSpecification} spec the specification
  * @returns {boolean}
  */
 function isSpecifierSkippingWhitespace(spec) {
@@ -340,10 +352,10 @@ function isSpecifierSkippingWhitespace(spec) {
 
 /**
  * Converts a format string to prose.
- * @param {{typ: string, value: string}[]} parts the literal and format specifier parts of the prose
+ * @param {ConvSpecification[]} parts the literal and format specifier parts of the prose
  * @param {boolean} isScanf true if this is a scanf function
  * @param {boolean} isSafe true if this is a safe function (_s)
- * @returns {{prose: Object, types: FlatArray<*, 1>[]}}
+ * @returns {{prose: string, types: FlatArray<*, 1>[]}}
  */
 function formatStringToProse(parts, isScanf, isSafe) {
     if (isScanf) {
@@ -361,15 +373,16 @@ function formatStringToProse(parts, isScanf, isSafe) {
     }
 
     const proses = parts.map(e => formatSpecifierToProse(e, isScanf, isSafe));
-    return {
-        prose: proses.map(p => p.prose).join('\n'),
-        types: proses.map(p => p.types).flat()
-    };
+    const prose = proses.map(p => p.prose).join('\n') ||
+        (isScanf ? 'Match nothing' : 'Write nothing');
+    const types = proses.map(p => p.types).flat();
+
+    return {prose, types};
 }
 
 /**
  * Converts a conversion specifier to prose and type information of the arguments.
- * @param {{typ: string, length: string, value:string}} specifier the specifier object
+ * @param {ConvSpecification} specifier the specifier object
  * @param {boolean} isScanf true if this is a scanf family function
  * @param {boolean} isSafe true if this is a safe function (_s)
  * @returns {{prose: string, types: string[]}}
