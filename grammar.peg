@@ -52,7 +52,7 @@ FormatArguments
   }
 
 FormatArgument
-  = StringLiteral / IdExpression
+  = StringLiteral / FormatArgExpr
 
 StringLiteral
   = '"' value:StringLiteralContents '"' {
@@ -69,13 +69,27 @@ StringLiteralContents
       return text();
   }
 
-IdExpression
-  = [-+~&*! ]* Identifier {
-      return {
-          typ: "expr",
-          value: text().trim()
-      };
+FormatArgExpr
+  = expr:UnaryExpr {
+    return {typ: "expr", value: expr.trim()};
   }
+
+UnaryExpr
+  = PrefixExpr {
+      return text();
+  }
+
+ParenthesizedExpr
+  = _ "(" UnaryExpr _ ")"
+
+PrefixExpr
+  = _ (_ ("++" / "+" / "--" / "-" / "&" / "*" / "!" / "~" / "(" DeclarationSpecifiers AbstractDeclarator? _ ")"))* PostfixExpr
+
+PostfixExpr
+  = PrimaryExpr (_ ("(" UnaryExpr _ ")" / "[" UnaryExpr _"]" / "++" / "--"))*
+
+PrimaryExpr
+  = _ Identifier / _ IntegerConstant / _ "(" UnaryExpr _")"
 
 // DECLARATIONS
 
@@ -85,13 +99,19 @@ Declaration "declaration"
   }
 
 DeclarationSpecifiers "declaration-specifier-list"
-  = head:DeclarationSpecifier tail:(__ DeclarationSpecifier)* {
+  = head:TypedefName tail:(__ XNoTypedefDeclarationSpecifier)* {
+    return reduceRightRecursion(head, tail);
+  }
+  / head:DeclarationSpecifier tail:(__ DeclarationSpecifier)* {
     return reduceRightRecursion(head, tail);
   }
 
 DeclarationSpecifier "declaration-specifier"
+  = XNoTypedefDeclarationSpecifier / TypedefName
+
+XNoTypedefDeclarationSpecifier "x-no-typedef-declaration-specifier"
   = StorageClassSpecifier
-  / TypeSpecifier
+  / XNoTypedefTypeSpecifier
   / TypeQualifier
   / FunctionSpecifier
 
@@ -122,12 +142,14 @@ StorageClassSpecifier "storage-class-specifier"
   }
 
 TypeSpecifier "type-specifier"
+  = XNoTypedefTypeSpecifier / TypedefName
+
+XNoTypedefTypeSpecifier "x-no-typedef-type-specifier"
   = it:("void" / "char" / "short" / "int" / "long" / "float" / "double" / "signed" / "unsigned" / ComplexKeyword / BoolKeyword) !WordChar
   { return ["type-specifier", it]; }
   / AtomicTypeSpecifier
   / StructOrUnionSpecifier
   / EnumSpecifier
-  / TypedefName
 
 StructOrUnionSpecifier "struct-or-union-specifier"
   =  kind:$("struct" / "union" / "class") __ id:Identifier !WordChar (_ "{" _ "}")? {
@@ -398,22 +420,9 @@ Keyword "keyword"
   / ThreadLocalKeyword
 
 KnownAlias
-  = "size_t"
-  / "intptr_t"
-  / "uintptr_t"
-  / "ptrdiff_t"
-  / "nullptr_t"
-  / "int8_t"
-  / "int16_t"
-  / "int32_t"
-  / "int64_t"
-  / "intmax_t"
-  / "uint8_t"
-  / "uint16_t"
-  / "uint32_t"
-  / "uint64_t"
-  / "uintmax_t"
-  / "FILE"
+  = "FILE" / PosixAlias
+
+PosixAlias = ([a-zA-Z_](!"_t" WordChar)*) "_t" { return text(); }
 
 AlignasKeyword
   = ("_Alignas" / "alignas") { return "alignas"; }
