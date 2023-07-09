@@ -19,7 +19,7 @@
 <main>
     <h1>cdecl+</h1>
     <h2>C Declarations &amp; printf/scanf &#10132; Prose</h2>
-    <input id="input" autocomplete="off" spellcheck="false" autofocus oninput="parseInput(this.value)"/>
+    <input id="input" autocomplete="off" spellcheck="false" autofocus/>
 
     <div id="output">
         <div id="examples">
@@ -253,13 +253,6 @@
     <div id="author">by <a href="https://github.com/Eisenwave">eisenwave</a></div>
 </footer>
 
-<script>const module = {};</script>
-<script src="js/parser.min.js"></script>
-<script src="js/printf-parser.min.js"></script>
-<script src="js/scanf-parser.min.js"></script>
-<script src="js/prose-decl.js"></script>
-<script src="js/prose-printf.js"></script>
-<script src="js/prose.js"></script>
-<script src="js/main.js"></script>
+<script src="js/main.js" type="module"></script>
 </body>
 </html>

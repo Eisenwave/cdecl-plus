@@ -1,3 +1,6 @@
+import {astToProse, setDiagnosticsCallback} from "./prose.js";
+import {MAIN_PARSER} from "./parser.min.js";
+
 const INPUT = document.getElementById("input");
 const EXAMPLES = document.getElementById("examples");
 const EXAMPLES_LIST = document.getElementById("examples-list");
@@ -5,7 +8,7 @@ const PROSE = document.getElementById("prose");
 const DEBUG_OUTPUT = document.getElementById("debug-output");
 const DIAGNOSTICS = document.getElementById("diagnostics");
 
-function parseInput(input) {
+export function parseInput(input) {
     updatePageQuery(input);
 
     if (input.trim().length === 0) {
@@ -106,6 +109,8 @@ function showDiagnostic(id, shown = true) {
     element.hidden = !shown;
 }
 
+setDiagnosticsCallback(showDiagnostic);
+
 window.addEventListener('load', () => {
     const urlSearchParams = new URLSearchParams(window.location.search);
 
@@ -121,5 +126,7 @@ window.addEventListener('load', () => {
 for (const li of EXAMPLES_LIST.childNodes) {
     li.addEventListener('click', () => {
         parseInput(INPUT.value = li.innerText);
-    })
+    });
 }
+
+INPUT.oninput = (event) =>  parseInput(event.target.value);

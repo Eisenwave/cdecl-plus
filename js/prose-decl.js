@@ -1,3 +1,5 @@
+import {cdecl} from "./prose.js";
+
 const SPECIFIER_CONFLICTS = [
     ['class', 'struct', 'union', 'enum', 'char', 'int', 'float', 'double', 'void', '_Atomic()', 'typedef-name', 'bool'],
     ['class', 'struct', 'union', 'enum', 'char', 'short', 'long', 'float', 'void', '_Atomic()', 'bool'],
@@ -46,7 +48,7 @@ const SPECIFIER_ORDERING = [
  * @param {Object} ast the abstract syntax tree
  * @return {string[]} an array of paragraphs
  */
-function declarationsToProse(ast) {
+export function declarationsToProse(ast) {
     if (ast.declarators.length === 0) {
         throw {message: 'Nothing declared'};
     }

@@ -1,5 +1,9 @@
 "use strict";
 
+import {cdecl} from "./prose.js";
+import {SCANF_PARSER} from "./scanf-parser.min.js";
+import {PRINTF_PARSER} from "./printf-parser.min.js";
+
 const PRINTF_TYPES = {
     'c': 'int',
     'lc': 'wint_t',
@@ -249,7 +253,7 @@ const ARGUMENTS_HEADER = `${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.lengt
  * @returns {string[]} the prose paragraphs
  * @typedef {{typ: string, length: string, value: string}} ConvSpecification
  */
-function formatArgsToProse(functionName, args) {
+export function formatArgsToProse(functionName, args) {
     args.filter(arg => arg.typ === 'string')
         .forEach(arg => arg.value = atob(arg.value));
 
