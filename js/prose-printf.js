@@ -1,8 +1,8 @@
 "use strict";
 
 import {cdecl} from "./prose.js";
-import {SCANF_PARSER} from "./scanf-parser.min.js";
-import {PRINTF_PARSER} from "./printf-parser.min.js";
+import {SCANF_PARSER} from "./scanf-parser.js";
+import {PRINTF_PARSER} from "./printf-parser.js";
 
 const PRINTF_TYPES = {
     'c': 'int',

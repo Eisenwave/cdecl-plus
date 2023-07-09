@@ -1,5 +1,5 @@
 import {astToProse, setDiagnosticsCallback} from "./prose.js";
-import {MAIN_PARSER} from "./parser.min.js";
+import {MAIN_PARSER} from "./parser.js";
 
 const INPUT = document.getElementById("input");
 const EXAMPLES = document.getElementById("examples");
