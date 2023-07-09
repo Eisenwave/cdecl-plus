@@ -123,10 +123,22 @@ window.addEventListener('load', () => {
     }
 })
 
-for (const li of EXAMPLES_LIST.childNodes) {
-    li.addEventListener('click', () => {
-        parseInput(INPUT.value = li.innerText);
-    });
+function setInput(input) {
+    parseInput(INPUT.value = input);
+    INPUT.focus();
 }
 
-INPUT.oninput = (event) =>  parseInput(event.target.value);
+for (const li of EXAMPLES_LIST.childNodes) {
+    li.onclick = () => setInput(li.innerText);
+
+    li.onkeyup = event => {
+        if (event.key === ' ' || event.key === 'Enter') {
+            setInput(li.innerText);
+        }
+    };
+
+    li.enterKeyHint = 'done';
+    li.inputMode = 'none';
+}
+
+INPUT.oninput = () =>  parseInput(INPUT.value);

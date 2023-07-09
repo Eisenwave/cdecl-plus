@@ -163,6 +163,10 @@ input:focus {
     z-index: 1;
 }
 
+#examples, #examples li {
+    user-select: none;
+}
+
 #examples ul {
     padding-left: 1em;
 }
