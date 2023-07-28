@@ -1,4 +1,4 @@
-import {astToProse, setDiagnosticsCallback} from "./prose.js";
+import {astToProse} from "./prose.js";
 import {MAIN_PARSER} from "./parser.js";
 
 const INPUT = document.getElementById("input");
@@ -51,6 +51,18 @@ function updatePageQuery(input) {
     window.history.replaceState({}, null, url);
 }
 
+/**
+ * @typedef UiOutput
+ * @type {Object}
+ * @property {boolean} isError true if the output is a fatal error
+ * @property {string} prose the text output
+ * @property {string} debug the debug output
+ */
+
+/**
+ * Updates the UI to the given output object.
+ * @param {UiOutput} output
+ */
 function setOutput(output) {
     INPUT.className = output.isError ? 'error' : '';
 
@@ -69,22 +81,41 @@ function hideOutput() {
     PROSE.style.opacity = '0';
 }
 
+/**
+ * Sanitizes and parses the user input.
+ * @param {string} input the user input
+ * @return {Object} the abstract syntax tree
+ */
 function pegParse(input) {
     return MAIN_PARSER.parse(sanitizeInput(input));
 }
 
+/**
+ * Sanitizes user input.
+ * @param {string} input the user input to be turned into prose
+ * @return {string}
+ */
 function sanitizeInput(input) {
     return input
         .trim()
         .replace(/\s+/g, ' ');
 }
 
+/**
+ * Processes the AST and returns UI output information.
+ * @param ast the abstract syntax tree
+ * @return {UiOutput}
+ */
 function processAst(ast) {
-    const astJson = JSON.stringify(ast, undefined, 4);
+    const debug = JSON.stringify(ast, undefined, 4);
     try {
-        return {isError: false, prose: astToProse(ast), debug: astJson};
+        const result = astToProse(ast);
+        const prose = result.paragraphs.join('\n\n');
+        result.diagnostics.map(showDiagnostic);
+
+        return {isError: false, prose, debug};
     } catch (e) {
-        return {isError: true, prose: 'Fatal Error: ' + e.message, debug: astJson};
+        return {isError: true, prose: 'Fatal Error: ' + e.message, debug};
     }
 }
 
@@ -109,7 +140,14 @@ function showDiagnostic(id, shown = true) {
     element.hidden = !shown;
 }
 
-setDiagnosticsCallback(showDiagnostic);
+/**
+ * Sets the input programatically, e.g. when the user picks an example.
+ * @param {string} input the user input
+ */
+function setInput(input) {
+    parseInput(INPUT.value = input);
+    INPUT.focus();
+}
 
 window.addEventListener('load', () => {
     const urlSearchParams = new URLSearchParams(window.location.search);
@@ -122,11 +160,6 @@ window.addEventListener('load', () => {
         }
     }
 })
-
-function setInput(input) {
-    parseInput(INPUT.value = input);
-    INPUT.focus();
-}
 
 for (const li of EXAMPLES_LIST.childNodes) {
     li.onclick = () => setInput(li.innerText);

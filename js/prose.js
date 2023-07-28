@@ -1,38 +1,32 @@
 "use strict";
 
-import {declarationsToProse} from "./prose-decl.js";
-import {formatArgsToProse} from "./prose-printf.js";
-
-export const cdecl = {showDiagnostic: undefined};
+import * as cdecl from "./prose-decl.js";
+import * as printf from "./prose-printf.js";
 
 /**
- * Sets the diagnostics callback.
- * @param {function(string): void} callback the diagnostics callback
+ * @typedef Prose
+ * @type {Object}
+ * @property {string[]} paragraphs the list of paragraphs
+ * @property {string[]} diagnostics the list of diagnostics ids
  */
-export function setDiagnosticsCallback(callback) {
-    cdecl.showDiagnostic = callback;
-}
 
 /**
- * Converts an AST to a prose string.
+ * Converts an AST to prose.
  * @param {Object} ast the abstract syntax tree
- * @return {string}
+ * @return {Prose} the prose
  */
 export function astToProse(ast) {
-    return astToProseParagraphs(ast).join('\n\n');
-}
-
-/**
- * Converts an AST to an array of prose paragraphs.
- * @param {Object} ast the abstract syntax tree
- * @return {string[]}
- */
-export function astToProseParagraphs(ast) {
     if (ast['declarators']) {
-        return declarationsToProse(ast);
+        const explainer = new cdecl.Explainer();
+        const paragraphs = explainer.declarationsToProse(ast);
+        const diagnostics = [...explainer.diagnostics];
+        return {paragraphs, diagnostics};
     }
     if (ast['functionName']) {
-        return formatArgsToProse(ast['functionName'], ast['formatArgs']);
+        const explainer = new printf.Explainer();
+        const paragraphs = explainer.formatArgsToProse(ast['functionName'], ast['formatArgs']);
+        const diagnostics = [...explainer.diagnostics];
+        return {paragraphs, diagnostics};
     }
     throw {message: 'Empty AST'};
 }
