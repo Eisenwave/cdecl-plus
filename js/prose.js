@@ -1,7 +1,5 @@
-"use strict";
-
-import * as cdecl from "./prose-decl.js";
-import * as printf from "./prose-printf.js";
+import * as cdecl from './prose-decl.js';
+import * as printf from './prose-printf.js';
 
 /**
  * @typedef Prose
@@ -13,7 +11,7 @@ import * as printf from "./prose-printf.js";
 /**
  * Converts an AST to prose.
  * @param {Object} ast the abstract syntax tree
- * @return {Prose} the prose
+ * @returns {Prose} the prose
  */
 export function astToProse(ast) {
     if (ast['declarators']) {

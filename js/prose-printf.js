@@ -1,7 +1,5 @@
-"use strict";
-
-import {SCANF_PARSER} from "./scanf-parser.js";
-import {PRINTF_PARSER} from "./printf-parser.js";
+import {SCANF_PARSER} from './scanf-parser.js';
+import {PRINTF_PARSER} from './printf-parser.js';
 
 const PRINTF_TYPES = {
     'c': 'int',
@@ -201,8 +199,8 @@ const SCANF_TYPES = {
     'p': 'void**'
 };
 
-const NUMBER_PRECISION_MEANING = "minimum digit count (left-pad with '0')";
-const FLOATING_PRECISION_MEANING = "number of fractional digits";
+const NUMBER_PRECISION_MEANING = 'minimum digit count (left-pad with \'0\')';
+const FLOATING_PRECISION_MEANING = 'number of fractional digits';
 
 const PRECISION_MEANINGS = {
     's': 'maximum string length',
@@ -219,45 +217,55 @@ const PRECISION_MEANINGS = {
     'a': FLOATING_PRECISION_MEANING,
     'A': FLOATING_PRECISION_MEANING,
     'g': FLOATING_PRECISION_MEANING,
-    'G': FLOATING_PRECISION_MEANING,
+    'G': FLOATING_PRECISION_MEANING
 };
 
 const FORMAT_FUNCTION_PREFIX_TYPES = {
     scanf: [],
-    fscanf: ["FILE*"],
-    sscanf: ["const char*"],
+    fscanf: ['FILE*'],
+    sscanf: ['const char*'],
     scanf_s: [],
-    fscanf_s: ["FILE*"],
-    sscanf_s: ["const char*"],
+    fscanf_s: ['FILE*'],
+    sscanf_s: ['const char*'],
 
     printf: [],
-    sprintf: ["char*"],
-    fprintf: ["FILE*"],
-    snprintf: ["char*", "size_t"],
+    sprintf: ['char*'],
+    fprintf: ['FILE*'],
+    snprintf: ['char*', 'size_t'],
     printf_s: [],
-    fprintf_s: ["FILE*"],
-    sprintf_s: ["char*", "rsize_t"],
-    snprintf_s: ["char*", "rsize_t"]
+    fprintf_s: ['FILE*'],
+    sprintf_s: ['char*', 'rsize_t'],
+    snprintf_s: ['char*', 'rsize_t']
 };
 
 const NTH_ENGLISH = ['0th', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
 
-const ARGUMENTS_TITLE = "ARGUMENTS & EXPECTED TYPES";
+const ARGUMENTS_TITLE = 'ARGUMENTS & EXPECTED TYPES';
 const ARGUMENTS_HEADER = `${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.length)}`;
 
 /**
  * @typedef ConvSpecification
  * @type {Object}
- * @property {string} typ
- * @property {string} length
- * @property {string} value
+ * @property {'%' | 'whitespace' | 'string' | 'literal'} typ the type of object
+ * @property {string} length the length modifier
+ * @property {string} value the format specifier
+ * @property {? number | '*'} width
+ * the field width (printf), or maximum length (scanf)
+ * @property {? number | '*' | '.'} precision the precision
+ * @property {boolean} supressed true if the assignment is suppressed for scanf
+ * @property {[string, string][]} ranges the list of character set ranges
+ * @property {boolean?} negated whether the character set is negated
+ * @property {string[]} flags a list of flag characters
  */
 
 /**
  * An explainer for parsed printf/scanf family function calls.
- * @property {boolean} isScanf True if the parsed function is a scanf-family function.
- * @property {boolean} isSafe True if the parsed function is a safe function (_s suffix).
- * @property {Set<string>} diagnostics The set of output diagnostics.
+ * @property {boolean} isScanf
+ * True if the parsed function is a scanf-family function.
+ * @property {boolean} isSafe
+ * True if the parsed function is a safe function (_s suffix).
+ * @property {Set<string>} diagnostics
+ * The set of output diagnostics.
  */
 export class Explainer {
 
@@ -269,7 +277,7 @@ export class Explainer {
 
     /**
      * Adds the diagnostic with the given id to the output diagnostics.
-     * @param {string} id
+     * @param {string} id the diagnostics id
      * @returns {void}
      */
     showDiagnostic(id) {
@@ -279,7 +287,8 @@ export class Explainer {
     /**
      * Converts a call to a scanf/printf family function to prose.
      * @param {string} functionName the function name
-     * @param {ConvSpecification[]} args the arguments, where string arguments are base-64 encoded
+     * @param {ConvSpecification[]} args
+     * the arguments, where string arguments are base-64 encoded
      * @returns {string[]} the prose paragraphs
      */
     formatArgsToProse(functionName, args) {
@@ -293,7 +302,7 @@ export class Explainer {
 
         this.showDiagnostic(this.isScanf ? 'scanf' : 'printf');
         if (this.isSafe) {
-            this.showDiagnostic('format-bounds-checked')
+            this.showDiagnostic('format-bounds-checked');
         }
 
         const parser = this.isScanf ? SCANF_PARSER : PRINTF_PARSER;
@@ -305,7 +314,7 @@ export class Explainer {
             throw {message: `${functionName} requires at least ${firstVaIndex} arguments, got ${args.length}`};
         }
         if (formatString.typ !== 'string') {
-            throw {message: `Expected format string for ${NTH_ENGLISH[firstVaIndex]} argument, got "${formatString.value}"`}
+            throw {message: `Expected format string for ${NTH_ENGLISH[firstVaIndex]} argument, got "${formatString.value}"`};
         }
 
         /**
@@ -314,9 +323,10 @@ export class Explainer {
         const parsedFormat = (() => {
             try {
                 return parser.parse(formatString.value);
-            } catch (e) {
-                // syntax errors in format strings turn into an error diagnostics,
-                // not into hard error
+            }
+            catch (e) {
+                // syntax errors in format strings turn into an error
+                // diagnostics, not into hard error
                 if (e.name === 'SyntaxError') {
                     this.showDiagnostic('format-syntax-error');
                     return undefined;
@@ -342,7 +352,8 @@ export class Explainer {
     /**
      * Converts format string arguments to prose.
      * @param {ConvSpecification[]} args the arguments
-     * @param {number} firstVaIndex the index of the first variadic argument to the function
+     * @param {number} firstVaIndex
+     * the index of the first variadic argument to the function
      * @param {string[]} types the list of expected argument types
      * @returns {string} the arguments prose, or an empty string
      */
@@ -352,7 +363,8 @@ export class Explainer {
 
         if (args.length < types.length + 1) {
             this.showDiagnostic('format-not-enough-args');
-        } else if (args.length > types.length + 1) {
+        }
+        else if (args.length > types.length + 1) {
             this.showDiagnostic('format-too-many-args');
         }
 
@@ -387,7 +399,8 @@ export class Explainer {
 
     /**
      * Converts a format string to prose.
-     * @param {ConvSpecification[]} parts the literal and format specifier parts of the prose
+     * @param {ConvSpecification[]} parts
+     * the literal and format specifier parts of the prose
      * @returns {{prose: string, types: FlatArray<*, 1>[]}}
      */
     formatStringToProse(parts) {
@@ -395,7 +408,7 @@ export class Explainer {
             const wsUnsafeParts = parts.filter((p, i) => {
                 return !this.isSpecifierSkippingWhitespace(p) &&
                     (i === 0 || parts[i - 1].typ !== 'whitespace');
-            })
+            });
 
             if (wsUnsafeParts.find(p => p.typ === 'literal')) {
                 this.showDiagnostic('scanf-leading-whitespace-literal');
@@ -414,7 +427,8 @@ export class Explainer {
     }
 
     /**
-     * Converts a conversion specifier to prose and type information of the arguments.
+     * Converts a conversion specifier to prose and type information of the
+     * arguments.
      * @param {ConvSpecification} specifier the specifier object
      * @returns {{prose: string, types: string[]}}
      */
@@ -426,7 +440,7 @@ export class Explainer {
         }
         if (specifier.typ === 'whitespace') {
             // can only appear in scanf, merged to literal in printf
-            const prose = `Match any amount of whitespace`;
+            const prose = 'Match any amount of whitespace';
             return {prose, types: []};
         }
 
@@ -440,7 +454,8 @@ export class Explainer {
         const {header, details, types}
             = this.formatSpecifierWithTypeToProse(specifier, typ);
         const indent = '    ';
-        const prose = header + (details.length ? '\n' + details.map(p => indent + p).join('\n') : '');
+        const prose = header +
+            (details.length ? '\n' + details.map(p => indent + p).join('\n') : '');
 
         return {prose, types};
     }
@@ -453,40 +468,41 @@ export class Explainer {
      */
     printfFlagToProse(flag, kind) {
         switch (flag) {
-            case '-':
-                return `left-justify within the field`;
-            case '+':
-                return `prepend plus sign for positive numbers`;
-            case ' ':
-                return `prepend space for positive numbers`;
-            case '0':
-                return 'zero-pad the field';
-            case '#':
-                switch (kind) {
-                    case 'o':
-                        return 'minimum digit count increased automatically';
-                    case 'x':
-                    case 'X':
-                        return '"0x" is prefixed for nonzero numbers';
-                    case 'f':
-                    case 'F':
-                    case 'e':
-                    case 'E':
-                    case 'a':
-                    case 'A':
-                        return 'decimal point is always written';
-                    case 'g':
-                    case 'G':
-                        return 'preserve trailing zeros';
-                    default:
-                        return 'invalid use of alternative flag';
-                }
+        case '-':
+            return 'left-justify within the field';
+        case '+':
+            return 'prepend plus sign for positive numbers';
+        case ' ':
+            return 'prepend space for positive numbers';
+        case '0':
+            return 'zero-pad the field';
+        case '#':
+            switch (kind) {
+            case 'o':
+                return 'minimum digit count increased automatically';
+            case 'x':
+            case 'X':
+                return '"0x" is prefixed for nonzero numbers';
+            case 'f':
+            case 'F':
+            case 'e':
+            case 'E':
+            case 'a':
+            case 'A':
+                return 'decimal point is always written';
+            case 'g':
+            case 'G':
+                return 'preserve trailing zeros';
+            default:
+                return 'invalid use of alternative flag';
+            }
         }
     }
 
     /**
-     * Converts conversion specification flags to prose, ignoring any duplicates.
-     * @param {Object} specifier the specification object
+     * Converts conversion specification flags to prose,
+     * ignoring any duplicates.
+     * @param {ConvSpecification} specifier the specification object
      * @returns {string[]} an array of prose for each flag
      */
     formatSpecifierFlagsToProse(specifier) {
@@ -505,17 +521,19 @@ export class Explainer {
 
     /**
      * Converts the field width of a conversion specification to prose.
-     * @param {Object} specifier the specification object
+     * @param {ConvSpecification} specifier the specification object
      * @param {string?} typ the specifier type, if any
-     * @param {string[]} details the output list of detail prose for the specifier
-     * @returns {{typ: string | null, extraTypes: string[]}}
+     * @param {string[]} details
+     * the output list of detail prose for the specifier
+     * @returns {{typ: (string | null), extraTypes: string[]}}
      */
     printfFieldWidthToProse(specifier, typ, details) {
         const extraTypes = [];
 
         if (typeof (specifier.width) === 'number') {
             details.push(`${specifier.width}: field width`);
-        } else if (specifier.width === '*') {
+        }
+        else if (specifier.width === '*') {
             extraTypes.push('int');
             details.push('*: field width is read from int argument');
         }
@@ -525,10 +543,10 @@ export class Explainer {
 
     /**
      * Converts the scanf conversion specification width to prose.
-     * @param {Object} specifier the specification object
+     * @param {ConvSpecification} specifier the specification object
      * @param {string?} typ the type, if any
      * @param {string[]} details the output details list
-     * @returns {{typ: string | null, extraTypes: string[]}}
+     * @returns {{typ: (string | null), extraTypes: string[]}}
      */
     scanfWidthToProse(specifier, typ, details) {
         if (specifier.supressed) {
@@ -547,17 +565,19 @@ export class Explainer {
             extraTypes.push('rsize_t');
             details.push('_s: receiving buffer size is read from rsize_t argument');
             if (typeof (specifier.width) === 'number') {
-                this.showDiagnostic('scanf-max-field-width-_s')
+                this.showDiagnostic('scanf-max-field-width-_s');
             }
         }
 
-        return {typ: typ ?? null, extraTypes}
+        return {typ: typ ?? null, extraTypes};
     }
 
     /**
-     * Returns the prose of a single format specifier, with the type already determined.
-     * @param specifier the format specifier object
-     * @param {string?} typ the type of the format specifier, if any (may be undefined for %n)
+     * Returns the prose of a single format specifier,
+     * with the type already determined.
+     * @param {ConvSpecification} specifier the format specifier object
+     * @param {string?} typ the type of the format specifier,
+     * if any (may be undefined for %n)
      * @returns {{types: string[], header: string, details: string[]}}
      */
     formatSpecifierWithTypeToProse(specifier, typ) {
@@ -580,22 +600,31 @@ export class Explainer {
                 specifier.width === null) {
                 this.showDiagnostic('scanf-unbounded-string');
             }
-            if (specifier.value === '%' && (specifier.supressed || specifier.width !== null || specifier.length)) {
+            if (specifier.value === '%' &&
+                (specifier.supressed || specifier.width !== null || specifier.length)) {
                 this.showDiagnostic('scanf-%%');
             }
-        } else {
+        }
+        else {
             const precisionName = PRECISION_MEANINGS[specifier.value] ?? 'precision';
             if (typeof (specifier.precision) === 'number') {
                 details.push(`${precisionName}: ${specifier.precision}`);
-            } else if (specifier.precision === '*') {
+            }
+            else if (specifier.precision === '*') {
                 typesObj.extraTypes.push('int');
                 details.push(`.*: ${precisionName} is read from int argument`);
-            } else if (specifier.precision === '.') {
-                details.push(`.: ${precisionName} is taken as zero`)
+            }
+            else if (specifier.precision === '.') {
+                details.push(`.: ${precisionName} is taken as zero`);
             }
 
-            if (specifier.value === '%' && (specifier.flags.length || specifier.width !== null || specifier.precision !== null || specifier.length)) {
-                this.showDiagnostic('printf-%%');
+            if (specifier.value === '%') {
+                if (specifier.flags.length ||
+                    specifier.width !== null ||
+                    specifier.precision !== null ||
+                    specifier.length) {
+                    this.showDiagnostic('printf-%%');
+                }
             }
         }
 
@@ -609,52 +638,53 @@ export class Explainer {
 
     /**
      * Converts a scanf conversion specification object to prose.
-     * @param {{typ: string, width: number | '*', value: string}} specifier the specification object
+     * @param {ConvSpecification} specifier
+     * the specification object
      * @param {string?} typ the type, if any
      * @returns {string}
      */
     scanfSpecifierWithTypeToProseHeader(specifier, typ) {
         switch (specifier.value) {
-            case '%':
-                return 'Match "%"';
-            case 'c':
-                return typeof (specifier.width) === 'number' ?
-                    `Read one or multiple characters ${typ}, with no null-terminator emitted` :
-                    `Read a single character to ${typ}`;
-            case 's':
-                return `Read sequence of non-whitespace characters to ${typ}, append null-terminator`;
-            case '[]':
-                return `Read a non-empty sequence of characters in set to ${typ}`;
-            case 'd':
-                return `Read decimal integer to ${typ} as if by strtol(..., 10)`;
-            case 'i':
-                return `Read integer to ${typ} as if by strtol(..., 0)`;
-            case 'o':
-                return `Read integer to ${typ} as if by strtoul(..., 8)`;
-            case 'x':
-            case 'X':
-                return `Read integer to ${typ} as if by strtoul(..., 16)`;
-            case 'u':
-                return `Read decimal integer to ${typ} as if by strtoul(..., 10)`;
-            case 'f':
-            case 'F':
-            case 'e':
-            case 'E':
-            case 'a':
-            case 'A':
-            case 'g':
-            case 'G':
-                return `Read a floating-point number to ${typ} as if by strtof(...)`;
-            case 'n':
-                return `Store the number of characters read so far in ${typ}`;
-            case 'p':
-                return `Read an implementation-defined sequence defining a pointer to ${typ}`;
+        case '%':
+            return 'Match "%"';
+        case 'c':
+            return typeof (specifier.width) === 'number' ?
+                `Read one or multiple characters ${typ}, with no null-terminator emitted` :
+                `Read a single character to ${typ}`;
+        case 's':
+            return `Read sequence of non-whitespace characters to ${typ}, append null-terminator`;
+        case '[]':
+            return `Read a non-empty sequence of characters in set to ${typ}`;
+        case 'd':
+            return `Read decimal integer to ${typ} as if by strtol(..., 10)`;
+        case 'i':
+            return `Read integer to ${typ} as if by strtol(..., 0)`;
+        case 'o':
+            return `Read integer to ${typ} as if by strtoul(..., 8)`;
+        case 'x':
+        case 'X':
+            return `Read integer to ${typ} as if by strtoul(..., 16)`;
+        case 'u':
+            return `Read decimal integer to ${typ} as if by strtoul(..., 10)`;
+        case 'f':
+        case 'F':
+        case 'e':
+        case 'E':
+        case 'a':
+        case 'A':
+        case 'g':
+        case 'G':
+            return `Read a floating-point number to ${typ} as if by strtof(...)`;
+        case 'n':
+            return `Store the number of characters read so far in ${typ}`;
+        case 'p':
+            return `Read an implementation-defined sequence defining a pointer to ${typ}`;
         }
     }
 
     /**
      * Converts a printf conversion specification to a prose header.
-     * @param {{typ: string, length: string, value: string}} specifier the specification
+     * @param {ConvSpecification} specifier the specification
      * @param {string?} typ the type, if any
      * @returns {string}
      */
@@ -663,41 +693,41 @@ export class Explainer {
             : 'lower-case';
 
         switch (specifier.value) {
-            case '%':
-                return 'Write "%"';
-            case 'c': {
-                const convType = specifier.length === 'l' ? 'wchar_t[2]'
-                    : 'unsigned char';
-                return `Write single character of type ${typ}, converted to ${convType}`;
-            }
-            case 's':
-                return `Write a null-terminated string of type ${typ}`;
-            case 'd':
-            case 'i':
-                return `Write a decimal ${typ}`;
-            case 'o':
-                return `Write an octal ${typ}`;
-            case 'x':
-            case 'X':
-                return `Write a hexadecimal ${typ} using ${cas} letters`;
-            case 'u':
-                return `Write a decimal ${typ}`;
-            case 'f':
-            case 'F':
-                return `Write a decimal ${typ} with ${cas} infinity/NaN symbols`;
-            case 'e':
-            case 'E':
-                return `Write a ${typ} in decimal exponent notation, with ${cas} infinity/NaN symbols`;
-            case 'a':
-            case 'A':
-                return `Write a ${typ} in hexadecimal exponent notation, with ${cas} infinity/NaN symbols`;
-            case 'g':
-            case 'G':
-                return `Write a ${typ} in notation which depends on the value, with ${cas} infinity/NaN symbols`;
-            case 'n':
-                return `Write the number of characters written so far to ${typ}`;
-            case 'p':
-                return `Write an implementation-defined sequence defining a ${typ}`;
+        case '%':
+            return 'Write "%"';
+        case 'c': {
+            const convType = specifier.length === 'l' ? 'wchar_t[2]'
+                : 'unsigned char';
+            return `Write single character of type ${typ}, converted to ${convType}`;
+        }
+        case 's':
+            return `Write a null-terminated string of type ${typ}`;
+        case 'd':
+        case 'i':
+            return `Write a decimal ${typ}`;
+        case 'o':
+            return `Write an octal ${typ}`;
+        case 'x':
+        case 'X':
+            return `Write a hexadecimal ${typ} using ${cas} letters`;
+        case 'u':
+            return `Write a decimal ${typ}`;
+        case 'f':
+        case 'F':
+            return `Write a decimal ${typ} with ${cas} infinity/NaN symbols`;
+        case 'e':
+        case 'E':
+            return `Write a ${typ} in decimal exponent notation, with ${cas} infinity/NaN symbols`;
+        case 'a':
+        case 'A':
+            return `Write a ${typ} in hexadecimal exponent notation, with ${cas} infinity/NaN symbols`;
+        case 'g':
+        case 'G':
+            return `Write a ${typ} in notation which depends on the value, with ${cas} infinity/NaN symbols`;
+        case 'n':
+            return `Write the number of characters written so far to ${typ}`;
+        case 'p':
+            return `Write an implementation-defined sequence defining a ${typ}`;
         }
     }
 

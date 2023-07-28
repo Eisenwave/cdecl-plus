@@ -1,12 +1,12 @@
-import {astToProse} from "./prose.js";
-import {MAIN_PARSER} from "./parser.js";
+import {astToProse} from './prose.js';
+import {MAIN_PARSER} from './parser.js';
 
-const INPUT = document.getElementById("input");
-const EXAMPLES = document.getElementById("examples");
-const EXAMPLES_LIST = document.getElementById("examples-list");
-const PROSE = document.getElementById("prose");
-const DEBUG_OUTPUT = document.getElementById("debug-output");
-const DIAGNOSTICS = document.getElementById("diagnostics");
+const INPUT = document.getElementById('input');
+const EXAMPLES = document.getElementById('examples');
+const EXAMPLES_LIST = document.getElementById('examples-list');
+const PROSE = document.getElementById('prose');
+const DEBUG_OUTPUT = document.getElementById('debug-output');
+const DIAGNOSTICS = document.getElementById('diagnostics');
 
 export function parseInput(input) {
     updatePageQuery(input);
@@ -21,11 +21,13 @@ export function parseInput(input) {
     try {
         const ast = pegParse(input);
         setOutput(processAst(ast));
-    } catch (e) {
+    }
+    catch (e) {
         const error = {isError: true, debug: e.message};
         if (e.name === 'SyntaxError') {
             error.prose = 'Syntax Error';
-        } else {
+        }
+        else {
             error.prose = e.constructor.name + ': ' + e.message;
             console.error(e);
         }
@@ -36,7 +38,7 @@ export function parseInput(input) {
 /**
  * Updates the page query given the content of the text input.
  * @param {string} input the input string
- * @return {void}
+ * @returns {void}
  */
 function updatePageQuery(input) {
     input = input.trim();
@@ -61,7 +63,8 @@ function updatePageQuery(input) {
 
 /**
  * Updates the UI to the given output object.
- * @param {UiOutput} output
+ * @param {UiOutput} output the output
+ * @returns {void}
  */
 function setOutput(output) {
     INPUT.className = output.isError ? 'error' : '';
@@ -84,7 +87,7 @@ function hideOutput() {
 /**
  * Sanitizes and parses the user input.
  * @param {string} input the user input
- * @return {Object} the abstract syntax tree
+ * @returns {Object} the abstract syntax tree
  */
 function pegParse(input) {
     return MAIN_PARSER.parse(sanitizeInput(input));
@@ -93,7 +96,7 @@ function pegParse(input) {
 /**
  * Sanitizes user input.
  * @param {string} input the user input to be turned into prose
- * @return {string}
+ * @returns {string}
  */
 function sanitizeInput(input) {
     return input
@@ -103,8 +106,8 @@ function sanitizeInput(input) {
 
 /**
  * Processes the AST and returns UI output information.
- * @param ast the abstract syntax tree
- * @return {UiOutput}
+ * @param {Object} ast the abstract syntax tree
+ * @returns {UiOutput}
  */
 function processAst(ast) {
     const debug = JSON.stringify(ast, undefined, 4);
@@ -114,7 +117,8 @@ function processAst(ast) {
         result.diagnostics.map(showDiagnostic);
 
         return {isError: false, prose, debug};
-    } catch (e) {
+    }
+    catch (e) {
         return {isError: true, prose: 'Fatal Error: ' + e.message, debug};
     }
 }
@@ -122,6 +126,7 @@ function processAst(ast) {
 /**
  * Hides or unhides all diagnostics.
  * @param {boolean} hidden true if diagnostics should be hidden
+ * @returns {void}
  */
 function setDiagnosticsHidden(hidden = true) {
     for (const child of DIAGNOSTICS.children) {
@@ -133,7 +138,7 @@ function setDiagnosticsHidden(hidden = true) {
  * Displays or hides a diagnostic element.
  * @param {string} id the element id
  * @param {boolean} shown true if the element should be shown
- * @return {void}
+ * @returns {void}
  */
 function showDiagnostic(id, shown = true) {
     const element = document.getElementById('d-' + id);
@@ -143,6 +148,7 @@ function showDiagnostic(id, shown = true) {
 /**
  * Sets the input programatically, e.g. when the user picks an example.
  * @param {string} input the user input
+ * @returns {void}
  */
 function setInput(input) {
     parseInput(INPUT.value = input);
@@ -159,7 +165,7 @@ window.addEventListener('load', () => {
             parseInput(INPUT.value);
         }
     }
-})
+});
 
 for (const li of EXAMPLES_LIST.childNodes) {
     li.onclick = () => setInput(li.innerText);

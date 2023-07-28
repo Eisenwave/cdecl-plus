@@ -2,6 +2,65 @@ env:
   browser: true
   node: false
   es6: true
+ignorePatterns: ["js/*parser.js"]
 parserOptions:
   ecmaVersion: 2020
   sourceType: module
+rules:
+  array-bracket-spacing: [error, never]
+  arrow-spacing: [error, {before: true, after: true}]
+  camelcase:
+    - error
+    - properties: always
+      ignoreGlobals: true
+      allow: [scanf_s, fscanf_s, sscanf_s, printf_s, fprintf_s, sprintf_s, snprintf_s]
+  brace-style: [error, stroustrup]
+  comma-spacing: error
+  comma-dangle: error
+  curly: error
+  eol-last: error
+  eqeqeq: error
+  func-call-spacing: error
+  func-style: [error, declaration]
+  indent:
+    - error
+    - 4
+    - ignoredNodes: [ConditionalExpression]
+  max-len:
+    - error
+    - code: 100
+      tabWidth: 4
+      comments: 80
+      ignoreUrls: true
+      ignoreStrings: false
+      ignoreTemplateLiterals: true
+      ignoreRegExpLiterals: true
+  no-alert: error
+  no-catch-shadow: error
+  no-class-assign: error
+  no-cond-assign: error
+  no-const-assign: error
+  no-dupe-keys: error
+  no-duplicate-case: error
+  no-empty-character-class: error
+  no-extra-boolean-cast: error
+  no-extra-semi: error
+  no-self-assign: error
+  no-self-compare: error
+  no-tabs: error
+  no-useless-return: error
+  no-var: error
+  prefer-const: error
+  quotes: [error, single]
+  semi: [error, always]
+  semi-spacing: error
+  semi-style: error
+  spaced-comment: error
+  strict: [error, global]
+  valid-jsdoc:
+    - error
+    - prefer: {return: returns}
+      preferType:
+        object: Object
+      requireReturnDescription: false
+
