@@ -255,24 +255,17 @@ const ARGUMENTS_HEADER = `${ARGUMENTS_TITLE}\n${'-'.repeat(ARGUMENTS_TITLE.lengt
 
 /**
  * An explainer for parsed printf/scanf family function calls.
+ * @property {boolean} isScanf True if the parsed function is a scanf-family function.
+ * @property {boolean} isSafe True if the parsed function is a safe function (_s suffix).
+ * @property {Set<string>} diagnostics The set of output diagnostics.
  */
 export class Explainer {
 
-    /**
-     * True if the parsed function is a scanf-family function.
-     * @type boolean
-     */
-    isScanf;
-    /**
-     * True if the parsed function is a safe function (_s suffix).
-     * @type boolean
-     */
-    isSafe;
-    /**
-     * The set of output diagnostics.
-     * @type {Set<string>}
-     */
-    diagnostics = new Set();
+    constructor() {
+        this.isScanf = false;
+        this.isSafe = false;
+        this.diagnostics = new Set();
+    }
 
     /**
      * Adds the diagnostic with the given id to the output diagnostics.

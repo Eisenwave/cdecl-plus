@@ -46,14 +46,13 @@ const SPECIFIER_ORDERING = [
 
 /**
  * An explainer for C declarations.
+ * @property {Set<string>} diagnostics The set of output diagnostics.
  */
 export class Explainer {
 
-    /**
-     * The set of output diagnostics.
-     * @type {Set<string>}
-     */
-    diagnostics = new Set();
+    constructor() {
+        this.diagnostics = new Set();
+    }
 
     /**
      * Adds the diagnostic with the given id to the output diagnostics.
