@@ -71,7 +71,7 @@ export class Explainer {
      * @param {Object} ast the abstract syntax tree
      * @returns {string[]} an array of paragraphs
      */
-    declarationsToProse(ast) {
+    astToProse(ast) {
         if (ast.declarators.length === 0) {
             throw {message: 'Nothing declared'};
         }

@@ -285,6 +285,15 @@ export class Explainer {
     }
 
     /**
+     * Converts an abstract syntax tree to prose.
+     * @param {AbstractSyntaxTree} ast the abstract syntax tree
+     * @returns {string[]}
+     */
+    astToProse(ast) {
+        return this.formatArgsToProse(ast['functionName'], ast['formatArgs']);
+    }
+
+    /**
      * Converts a call to a scanf/printf family function to prose.
      * @param {string} functionName the function name
      * @param {ConvSpecification[]} args

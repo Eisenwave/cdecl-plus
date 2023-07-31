@@ -1,5 +1,4 @@
-import {astToProse} from './prose.js';
-import {MAIN_PARSER} from './parser.js';
+import {astToProse, pegParse} from './cdecl.js';
 
 const INPUT = document.getElementById('input');
 const EXAMPLES = document.getElementById('examples');
@@ -23,7 +22,7 @@ export function parseInput(input) {
         setOutput(processAst(ast));
     }
     catch (e) {
-        const error = {isError: true, debug: e.message};
+        const error = {isError: true, prose: '', debug: e.message};
         if (e.name === 'SyntaxError') {
             error.prose = 'Syntax Error';
         }
@@ -84,29 +83,11 @@ function hideOutput() {
     PROSE.style.opacity = '0';
 }
 
-/**
- * Sanitizes and parses the user input.
- * @param {string} input the user input
- * @returns {Object} the abstract syntax tree
- */
-function pegParse(input) {
-    return MAIN_PARSER.parse(sanitizeInput(input));
-}
 
-/**
- * Sanitizes user input.
- * @param {string} input the user input to be turned into prose
- * @returns {string}
- */
-function sanitizeInput(input) {
-    return input
-        .trim()
-        .replace(/\s+/g, ' ');
-}
 
 /**
  * Processes the AST and returns UI output information.
- * @param {Object} ast the abstract syntax tree
+ * @param {AbstractSyntaxTree} ast the abstract syntax tree
  * @returns {UiOutput}
  */
 function processAst(ast) {
@@ -124,7 +105,7 @@ function processAst(ast) {
 }
 
 /**
- * Hides or unhides all diagnostics.
+ * Hides or un-hides all diagnostics.
  * @param {boolean} hidden true if diagnostics should be hidden
  * @returns {void}
  */
@@ -137,16 +118,14 @@ function setDiagnosticsHidden(hidden = true) {
 /**
  * Displays or hides a diagnostic element.
  * @param {string} id the element id
- * @param {boolean} shown true if the element should be shown
  * @returns {void}
  */
-function showDiagnostic(id, shown = true) {
-    const element = document.getElementById('d-' + id);
-    element.hidden = !shown;
+function showDiagnostic(id) {
+    document.getElementById('d-' + id).hidden = false;
 }
 
 /**
- * Sets the input programatically, e.g. when the user picks an example.
+ * Sets the input programmatically, e.g. when the user picks an example.
  * @param {string} input the user input
  * @returns {void}
  */
