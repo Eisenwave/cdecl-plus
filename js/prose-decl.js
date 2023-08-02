@@ -46,6 +46,31 @@ const SPECIFIER_ORDERING = [
     'float', 'double'
 ];
 
+/**
+ * @typedef DeclarationSpecifier
+ * @type {[string, string]}
+ */
+
+/**
+ * @typedef Declarator
+ * @type {DeclaratorPart[]}
+ */
+
+/**
+ * @typedef DeclaratorPart
+ * @type {Object}
+ * @property {string} typ the type, a stringly typed enumeration
+ * @property {string?} id the identifier, if any
+ * @property {string[]?} qualifiers the list of qualifiers
+ * @property {boolean?} statik true if the array is static
+ * @property {?number} size the array size
+ * @property {Object[]?} params the function parameters
+ */
+
+/**
+ * @typedef DeclarationContext
+ * @type {'top-level' | 'parameter' | 'atomic'}
+ */
 
 /**
  * An explainer for C declarations.
@@ -89,11 +114,25 @@ export class Explainer {
         return paragraphs;
     }
 
+    /**
+     * Converts a declaration to prose.
+     * @param {DeclarationSpecifier[]} specifiers the declaration specifiers
+     * @param {Declarator} declarator the declarator
+     * @param {DeclarationContext} kind the context
+     * @returns {string} the prose paragraph
+     */
     declarationToProse(specifiers, declarator, kind) {
         return this.declarationWithKnownSpecifiersToProse(
             this.specifiersToProse(specifiers, kind), declarator, kind);
     }
 
+    /**
+     * Converts a declaration with specifiers already processed to prose.
+     * @param {Object} specifiersProse the prose so far
+     * @param {Declarator} declarator the declarator
+     * @param {DeclarationContext} kind the context
+     * @returns {string} the prose paragraph
+     */
     declarationWithKnownSpecifiersToProse(specifiersProse, declarator, kind) {
         const histo = specifiersProse.histogram;
         if (histo.has('void')) {
@@ -130,22 +169,29 @@ export class Explainer {
         return result.trim();
     }
 
+    /**
+     * Converts a declaration specifier sequence to a prose object.
+     * @param {DeclarationSpecifier[]} specifiers the specifiers
+     * @param {DeclarationContext} kind the context
+     * @returns {{histogram: Map<string, number>, atomic: (string|string),
+     * outer: string, inner: string}}
+     */
     specifiersToProse(specifiers, kind) {
-        const specifierIds = specifiers.map(this.specifierToId.bind(this));
-        const histogram = this.makeHistogram(specifierIds);
+        const specifierKeywords = specifiers.map(Explainer.specifierToKeyword);
+        const histogram = Explainer.makeHistogram(specifierKeywords);
 
-        this.checkForMisuse(specifiers, kind);
-        this.checkForConflicts(specifierIds);
-        this.checkForDuplicates(histogram);
+        Explainer.checkForMisuse(specifiers, kind);
+        Explainer.checkForConflicts(specifierKeywords);
+        Explainer.checkForDuplicates(histogram);
 
-        if (!specifierIds.some(s => EXPLICIT_TYPE_SPECIFIERS.has(s))) {
+        if (!specifierKeywords.some(s => EXPLICIT_TYPE_SPECIFIERS.has(s))) {
             const toAdd = histogram.has('complex') ? 'double' : 'int';
             specifiers.push(['type-specifier', toAdd]);
             if (toAdd === 'double') {
                 this.showDiagnostic('implicit-double');
             }
             else if (toAdd === 'int' &&
-                !specifierIds.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
+                !specifierKeywords.some(s => IDIOMATIC_IMPLICIT_INT_SPECIFIERS.has(s))) {
                 this.showDiagnostic('implicit-int');
             }
         }
@@ -153,15 +199,22 @@ export class Explainer {
         const atomic = atomicSpecifier === undefined ? '' :  'atomic ' + this.declarationToProse(
             atomicSpecifier[1].specifiers, atomicSpecifier[1].declarator, 'atomic');
 
-        const outer = this.processedSpecifiersToText(
+        const outer = Explainer.processedSpecifiersToText(
             specifiers.filter(s => OUTER_SPECIFIER_TYPES.has(s[0])));
-        const inner = this.processedSpecifiersToText(
+        const inner = Explainer.processedSpecifiersToText(
             specifiers.filter(s => INNER_SPECIFIER_TYPES.has(s[0])));
 
         return {outer, inner, atomic, histogram};
     }
 
-    specifierToId(s) {
+    /**
+     * Converts a specifier object to a keyword string.
+     * For most specifiers, this is simply the text, e.g. `"int"` for `int`.
+     * However, for specifiers such as `enum T`, the result is just `"enum"`.
+     * @param {DeclarationSpecifier} s the specifier
+     * @returns {string} the keyword
+     */
+    static specifierToKeyword(s) {
         switch (s[0]) {
         case 'atomic-type-specifier':
             return '_Atomic()';
@@ -174,7 +227,12 @@ export class Explainer {
         }
     }
 
-    makeHistogram(specifiers) {
+    /**
+     * Creates a histogram from a list of specifiers in text form.
+     * @param {string[]} specifiers the specifiers
+     * @returns {Map<string, number>}
+     */
+    static makeHistogram(specifiers) {
         const result = new Map();
         specifiers.forEach(s => {
             result.set(s, (result.get(s) ?? 0) + 1);
@@ -187,7 +245,7 @@ export class Explainer {
      * @param {string[]} specifierIds the list of specifier ids
      * @returns {void}
      */
-    checkForConflicts(specifierIds) {
+    static checkForConflicts(specifierIds) {
         for (const conflictPool of SPECIFIER_CONFLICTS) {
             let first = undefined;
             for (const s of specifierIds) {
@@ -204,7 +262,14 @@ export class Explainer {
         }
     }
 
-    checkForDuplicates(specifierHistogram) {
+    /**
+     * Throws on (excessive) duplication of declaration specifiers.
+     * For most specifiers, a single duplicate throws, however, `long`
+     * is handled with `long double` and `long long` in mind.
+     * @param {Map<string, number>} specifierHistogram the specifier histogram
+     * @returns {void}
+     */
+    static checkForDuplicates(specifierHistogram) {
         for (const [key, val] of specifierHistogram) {
             if (key === 'long') {
                 if (val > 2) {
@@ -221,20 +286,32 @@ export class Explainer {
         }
     }
 
-    checkForMisuse(specifiers, kind) {
+    /**
+     * Throws if there is misuse of specifiers in the declaration specifier
+     * sequence, depending on the provided kind of context.
+     * @param {DeclarationSpecifier[]} specifiers the specifiers
+     * @param {'top-level' | 'atomic' | 'parameter'} kind the kind of context
+     * @returns {void}
+     */
+    static checkForMisuse(specifiers, kind) {
         switch (kind) {
         case 'top-level':
             return;
         case 'atomic':
-            specifiers.forEach(this.checkForSpecifierMisuseInAtomicTypeSpecifier.bind(this));
+            specifiers.forEach(Explainer.checkForSpecifierMisuseInAtomicTypeSpecifier);
             break;
         case 'parameter':
-            specifiers.forEach(this.checkForSpecifierMisuseInFunctionParameter.bind(this));
+            specifiers.forEach(Explainer.checkForSpecifierMisuseInFunctionParameter);
             break;
         }
     }
 
-    checkForSpecifierMisuseInAtomicTypeSpecifier(s) {
+    /**
+     * Throws if the wrong kind of declaration specifier was used in _Atomic().
+     * @param {DeclarationSpecifier} s the specifier
+     * @returns {void}
+     */
+    static checkForSpecifierMisuseInAtomicTypeSpecifier(s) {
         switch (s[0]) {
         case 'storage-class-specifier':
             throw {message: 'Storage class specifier ' + s[1] +
@@ -250,7 +327,13 @@ export class Explainer {
         }
     }
 
-    checkForSpecifierMisuseInFunctionParameter(s) {
+    /**
+     * Throws if the wrong kind of declaration specifier was used in a function
+     * parameter.
+     * @param {DeclarationSpecifier} s the specifier
+     * @returns {void}
+     */
+    static checkForSpecifierMisuseInFunctionParameter(s) {
         switch (s[0]) {
         case 'storage-class-specifier':
             throw {message: 'Storage class specifier ' + s[1] +
@@ -261,10 +344,15 @@ export class Explainer {
         }
     }
 
-    processedSpecifiersToText(specifiers) {
+    /**
+     * Converts a declaration specifier sequence to prose.
+     * @param {DeclarationSpecifier[]} specifiers the specifiers
+     * @returns {string}
+     */
+    static processedSpecifiersToText(specifiers) {
         return specifiers
-            .sort((a, b) => this.compareSpecifiers(a[1], b[1]))
-            .map(this.specifierToText.bind(this))
+            .sort((a, b) => Explainer.compareSpecifiers(a[1], b[1]))
+            .map(Explainer.specifierToText)
             .join(' ');
     }
 
@@ -274,11 +362,16 @@ export class Explainer {
      * @param {string} b the second specifier
      * @returns {number} -1 if `a < b`, 1 if `a > b`, 0 otherwise
      */
-    compareSpecifiers(a, b) {
+    static compareSpecifiers(a, b) {
         return SPECIFIER_ORDERING.indexOf(a) - SPECIFIER_ORDERING.indexOf(b);
     }
 
-    specifierToText(specifier) {
+    /**
+     * Converts a declaration specifier to readable text form.
+     * @param {DeclarationSpecifier} specifier the specifier
+     * @returns {string} the human-readable text form
+     */
+    static specifierToText(specifier) {
         switch (specifier[0]) {
         case 'struct-or-union-specifier':
             return specifier.length > 2 ? specifier[1] + ' ' + specifier[2]
@@ -286,16 +379,29 @@ export class Explainer {
         case 'enum-specifier':
             return 'enum ' + specifier[1];
         default:
-            return this.remapSpecifierTextForReadability(specifier[1]);
+            return Explainer.remapSpecifierTextForReadability(specifier[1]);
         }
     }
 
-    remapSpecifierTextForReadability(text) {
+    /**
+     * Remaps some declaration specifier names onto a more human-readable
+     * form, e.g. `typedef` becomes "type alias for".
+     * @param {string} text the raw declaration specifier text form
+     * @returns {string} the human-readable text form
+     */
+    static remapSpecifierTextForReadability(text) {
         return text === 'typedef' ? 'type alias for'
-            : text === '_Atomic' ? 'atomic'
-                : text;
+             : text === '_Atomic' ? 'atomic'
+                                  : text;
     }
 
+    /**
+     * Converts a declarator to a prose object.
+     * @param {Declarator} decl the declarator
+     * @param {DeclarationContext} kind the context
+     * @returns {{trailingIdentifier: string, leadingIdentifier: string,
+     * text: string}}
+     */
     declaratorToProse(decl, kind) {
         const isParameter = kind === 'parameter';
         let result = '';
@@ -303,7 +409,7 @@ export class Explainer {
         let leadingIdentifier = '';
         let trailingIdentifier = '';
         let i = 0;
-        for (const d of decl) {
+        for (const /** @type {DeclaratorPart} */ d of decl) {
             const isFirst = i === 0 || decl[i - 1].typ === 'id';
             switch (d.typ) {
             case 'id': {
@@ -326,8 +432,8 @@ export class Explainer {
             }
             case '*': {
                 const q = d.qualifiers
-                    .sort(this.compareSpecifiers.bind(this))
-                    .map(this.remapSpecifierTextForReadability.bind(this))
+                    .sort(Explainer.compareSpecifiers)
+                    .map(Explainer.remapSpecifierTextForReadability)
                     .join(' ');
                 result += ` ${q} pointer${pluralS} to`;
                 pluralS = '';
@@ -355,8 +461,8 @@ export class Explainer {
                     this.showDiagnostic('non-parameter-vla');
                 }
                 const q = d.qualifiers
-                    .sort(this.compareSpecifiers.bind(this))
-                    .map(this.remapSpecifierTextForReadability.bind(this))
+                    .sort(Explainer.compareSpecifiers)
+                    .map(Explainer.remapSpecifierTextForReadability)
                     .join(' ');
                 result += ` ${q} VLA${pluralS} of unspecified size of`;
                 pluralS = 's';
@@ -379,7 +485,7 @@ export class Explainer {
                     this.showDiagnostic('zero-size-array');
                 }
 
-                const q = d.qualifiers.sort(this.compareSpecifiers.bind(this)).join(' ');
+                const q = d.qualifiers.sort(Explainer.compareSpecifiers).join(' ');
                 const statik = d.statik ? ' (size checked)' : '';
                 const size = d.size !== null ? `[${d.size.value}]` : '';
                 result += ` ${q} array${pluralS}${size}${statik} of`;
@@ -441,11 +547,9 @@ export class Explainer {
             }
             ++i;
         }
-        return {
-            text: result.trimLeft(),
-            leadingIdentifier: leadingIdentifier,
-            trailingIdentifier: trailingIdentifier
-        };
+
+        const text = result.trimStart();
+        return {text, leadingIdentifier, trailingIdentifier};
     }
 
 }
