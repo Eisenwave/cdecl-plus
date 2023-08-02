@@ -35,6 +35,19 @@ export function parseInput(input) {
 }
 
 /**
+ * Replaces a character in a URI with the corresponding escape sequence.
+ * @param {string} c the character
+ * @returns {string}
+ */
+function uriReplaceCharacter(c) {
+    return '%' + c
+        .charCodeAt(0)
+        .toString(16)
+        .toUpperCase()
+        .padStart(2, '0');
+}
+
+/**
  * Updates the page query given the content of the text input.
  * @param {string} input the input string
  * @returns {void}
@@ -46,7 +59,7 @@ function updatePageQuery(input) {
     if (input.length !== 0) {
         url += '?q=';
         url += encodeURI(input)
-            .replaceAll('&', '%26');
+            .replaceAll(/[^%0-9a-zA-Z_\u0080-\uffff]/g, uriReplaceCharacter);
     }
 
     window.history.replaceState({}, null, url);
