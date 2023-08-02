@@ -457,9 +457,10 @@ export class Explainer {
                 break;
             }
             case '[*]': {
-                if (!isParameter || i > 1 || i === 1 && decl[0].typ !== 'id') {
+                if (!isParameter) {
                     this.showDiagnostic('non-parameter-vla');
                 }
+                // TODO: diagnose VLAs of incomplete types
                 const q = d.qualifiers
                     .sort(Explainer.compareSpecifiers)
                     .map(Explainer.remapSpecifierTextForReadability)
