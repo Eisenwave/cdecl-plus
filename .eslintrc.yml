@@ -20,6 +20,7 @@ rules:
     - properties: always
       ignoreGlobals: true
       allow: [scanf_s, fscanf_s, sscanf_s, printf_s, fprintf_s, sprintf_s, snprintf_s]
+  capitalized-comments: error
   comma-dangle: error
   comma-spacing: error
   comma-style: error

@@ -334,13 +334,13 @@ export class Explainer {
                 return parser.parse(formatString.value);
             }
             catch (e) {
-                // syntax errors in format strings turn into an error
-                // diagnostics, not into hard error
+                /* Syntax errors in format strings turn into an error
+                 * diagnostics, not into hard error. */
                 if (e.name === 'SyntaxError') {
                     this.showDiagnostic('format-syntax-error');
                     return undefined;
                 }
-                // anything but a syntax error gets rethrown
+                // Anything but a syntax error gets rethrown.
                 throw e;
             }
         })();
@@ -377,7 +377,7 @@ export class Explainer {
             this.showDiagnostic('format-too-many-args');
         }
 
-        // format string is included in count, so 1 argument is still not enough
+        // Format string is included in count, so 1 argument is still not enough
         if (relevantArgsCount < 2) {
             return '';
         }
@@ -385,7 +385,8 @@ export class Explainer {
 
         for (let i = 0, t = 0; i < relevantArgsCount; ++i) {
             if (i + 1 === firstVaIndex) {
-                continue; // skip format string, but keep all args before/after
+                // Skip format string, but keep all args before/after
+                continue;
             }
 
             const expr = args[i]?.value.replaceAll(' ', '') ?? 'MISSING';
@@ -448,7 +449,7 @@ export class Explainer {
             return {prose, types: []};
         }
         if (specifier.typ === 'whitespace') {
-            // can only appear in scanf, merged to literal in printf
+            // Can only appear in scanf, merged to literal in printf.
             const prose = 'Match any amount of whitespace';
             return {prose, types: []};
         }
