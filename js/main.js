@@ -104,7 +104,7 @@ function hideOutput() {
  * @returns {UiOutput}
  */
 function processAst(ast) {
-    const debug = JSON.stringify(ast, undefined, 4);
+    const debug = JSON.stringify(ast, void 0, 4);
     try {
         const result = astToProse(ast);
         const prose = result.paragraphs.join('\n\n');

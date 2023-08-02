@@ -247,7 +247,7 @@ export class Explainer {
      */
     static checkForConflicts(specifierIds) {
         for (const conflictPool of SPECIFIER_CONFLICTS) {
-            let first = undefined;
+            let first;
             for (const s of specifierIds) {
                 if (!conflictPool.includes(s)) {
                     continue;

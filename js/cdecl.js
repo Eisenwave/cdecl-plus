@@ -20,8 +20,8 @@ import {MAIN_PARSER} from './parser.js';
  * @returns {Prose} the prose
  */
 export function astToProse(ast) {
-    const explainer = ast['declarators'] ? new cdecl.Explainer()
-                    : ast['functionName'] ? new printf.Explainer()
+    const explainer = ast.declarators ? new cdecl.Explainer()
+                    : ast.functionName ? new printf.Explainer()
                     : null;
     if (explainer === null) {
         throw {message: 'Empty or ill-formed AST'};

@@ -290,7 +290,7 @@ export class Explainer {
      * @returns {string[]}
      */
     astToProse(ast) {
-        return this.formatArgsToProse(ast['functionName'], ast['formatArgs']);
+        return this.formatArgsToProse(ast.functionName, ast.formatArgs);
     }
 
     /**
@@ -506,6 +506,7 @@ export class Explainer {
                 return 'invalid use of alternative flag';
             }
         }
+        throw {message: 'Unrecognized flag: ' + flag};
     }
 
     /**
@@ -689,6 +690,7 @@ export class Explainer {
         case 'p':
             return `Read an implementation-defined sequence defining a pointer to ${typ}`;
         }
+        throw {message: 'Unexpected specifier %' + specifier.value};
     }
 
     /**
@@ -738,6 +740,7 @@ export class Explainer {
         case 'p':
             return `Write an implementation-defined sequence defining a ${typ}`;
         }
+        throw {error: 'Unexpected specifier %' + specifier.value};
     }
 
 }
