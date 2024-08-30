@@ -19,6 +19,23 @@ describe('Examples', function () {
         });
     });
 
+    code = 'int x;\nfloat y;';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('produces two paragraphs', function () {
+            assert.equal(paragraphs.length, 2);
+        });
+        it('produces no diagnostics', function() {
+            assert.deepEqual(diagnostics, []);
+        });
+        it('has correct prose', function () {
+            assert.deepEqual(paragraphs, [
+                'Declare x as int',
+                'Declare y as float'
+            ]);
+        });
+    });
+
     code = 'int(*(*)[10])()';
     describe(code, function () {
         const {paragraphs, diagnostics} = codeToProse(code);
