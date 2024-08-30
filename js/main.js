@@ -9,7 +9,8 @@ const DIAGNOSTICS = document.getElementById('diagnostics');
 
 /**
  * Called when input is provided by the user.
- * @param {string} input
+ * @param {string} input the query text contents
+ * @returns {void}
  */
 export function parseInput(input) {
     updatePageQuery(input);
