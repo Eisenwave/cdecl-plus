@@ -93,10 +93,19 @@ export class Explainer {
 
     /**
      * Converts an AST to prose.
-     * @param {Object} ast the abstract syntax tree
+     * @param {Object[]} ast the abstract syntax tree
      * @returns {string[]} an array of paragraphs
      */
     astToProse(ast) {
+        return ast.map(decl => this.declarationAstToProse(decl)).flat();
+    }
+
+    /**
+     * Converts an AST subtree representing a declaration to prose.
+     * @param {Object} ast the abstract syntax tree
+     * @returns {string[]} an array of paragraphs
+     */
+    declarationAstToProse(ast) {
         if (ast.declarators.length === 0) {
             throw {message: 'Nothing declared'};
         }
