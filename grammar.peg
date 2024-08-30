@@ -21,7 +21,7 @@
 }
 
 Main
-  = Declaration / FormatCall
+  = XDeclarationList / FormatCall
 
 FormatCall "printf-scanf-call"
   = FormatScope?
@@ -93,8 +93,14 @@ PrimaryExpr
 
 // DECLARATIONS
 
+XDeclarationList
+  = head:Declaration tail:(_ ";" _ Declaration?)* {
+    return reduceRightRecursion(head, tail)
+      .filter(x => x !== null);
+  }
+
 Declaration "declaration"
-  = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList (_ ";")* _ {
+  = declSpecs:DeclarationSpecifiers _ list:InitDeclaratorList {
     return {specifiers: declSpecs, declarators: list};
   }
 
@@ -463,7 +469,7 @@ Comma "comma"
   = _ "," _
 
 _ "whitespace"
-  = ' '?
+  = [ \n]?
 
 __ "mandatory-whitespace"
-  = ' '
+  = [ \n]
