@@ -20,6 +20,7 @@ export function parseInput(input) {
     INPUT.style.height = (INPUT.scrollHeight + heightBalancingPixels) + 'px';
 
     if (input.trim().length === 0) {
+        INPUT.className = '';
         hideOutput();
         setDiagnosticsHidden();
         return;
