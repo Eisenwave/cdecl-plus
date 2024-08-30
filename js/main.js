@@ -7,8 +7,16 @@ const PROSE = document.getElementById('prose');
 const DEBUG_OUTPUT = document.getElementById('debug-output');
 const DIAGNOSTICS = document.getElementById('diagnostics');
 
+/**
+ * Called when input is provided by the user.
+ * @param {string} input
+ */
 export function parseInput(input) {
     updatePageQuery(input);
+
+    const heightBalancingPixels = 4;
+    INPUT.style.height = '';
+    INPUT.style.height = (INPUT.scrollHeight + heightBalancingPixels) + 'px';
 
     if (input.trim().length === 0) {
         hideOutput();

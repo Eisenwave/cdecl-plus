@@ -64,7 +64,7 @@ h2 {
     margin-bottom: 2em;
 }
 
-input {
+textarea {
     color: #eee;
     font-size: 14pt;
     font-family: inherit;
@@ -75,11 +75,18 @@ input {
     border: 0.2em solid gray;
     border-radius: 0.25em;
 
+    box-sizing: border-box;
     padding: 8px;
     width: 100%;
+    height: calc(1em + 16px + 0.4em + 4px);
+
+    /* disable scrollbar and resizing handle */
+    overflow-x: hidden;
+    overflow-y: hidden;
+    resize: none;
 }
 
-input:focus {
+textarea:focus {
     outline: none;
     border-color: #bc989b;
 }
