@@ -178,4 +178,12 @@ describe('Examples', function () {
             assert.deepEqual(actual, expected);
         });
     });
+
+    code = 'signed bool';
+    describe(code, function () {
+        it('throws because "signed" and "bool" conflict', function () {
+            assert.throws(() => codeToProse(code),
+                {message: 'Conflicting specifiers signed and bool'});
+        });
+    });
 });

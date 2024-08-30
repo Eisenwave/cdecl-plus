@@ -7,7 +7,7 @@ const SPECIFIER_CONFLICTS = [
     ['class', 'struct', 'union', 'enum', 'void', 'complex', '_Atomic()', 'bool'],
     ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'float', 'double', 'void',
         '_Atomic()'],
-    ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'complex'],
+    ['class', 'struct', 'union', 'enum', 'signed', 'unsigned', 'typedef-name', 'bool', 'complex'],
     ['int', 'complex'],
     ['char', 'short', 'long', 'void', 'bool', 'complex'],
     ['int', 'float', 'double', 'void', '_Atomic()'],
