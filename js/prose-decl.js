@@ -16,12 +16,25 @@ const SPECIFIER_CONFLICTS = [
     ['_Atomic', 'void']
 ];
 
+/**
+ * Type specifiers which explicitly denote a type.
+ * For example, `int` is considered to be explicit, whereas `short` is not in
+ * this set because it merely implies that the type is `int`.
+ * @type {Set<string>}
+ */
 const EXPLICIT_TYPE_SPECIFIERS = new Set([
     'void', 'char', 'int', 'bool',
     'float', 'double',
     'struct', 'class', 'union', 'enum',
     '_Atomic()', 'typedef-name']);
 
+/**
+ * Specifiers which result in an implicit `int` type, but do so idiomatically.
+ * For example, a `const x` declaration would implicitly be a `const int x`
+ * declaration in older C versions (and `const` is not in this set), but
+ * `short int x` still has this behavior and this is considered idiomatic.
+ * @type {Set<string>}
+ */
 const IDIOMATIC_IMPLICIT_INT_SPECIFIERS = new Set([
     'short', 'long', 'signed', 'unsigned'
 ]);
@@ -39,7 +52,8 @@ const INNER_SPECIFIER_TYPES = new Set([
 ]);
 
 const SPECIFIER_ORDERING = [
-    'typedef', 'extern', 'static', 'thread_local', 'auto', 'register', 'inline',
+    'typedef', 'extern', 'static', 'thread_local', 'auto', 'register',
+    'inline', 'constexpr',
     'const', 'volatile', 'restrict', '_Atomic',
     '_Atomic()', 'struct', 'class', 'enum',
     'void', 'bool', 'char', 'short', 'long', 'int',
@@ -137,7 +151,8 @@ export class Explainer {
 
     /**
      * Converts a declaration with specifiers already processed to prose.
-     * @param {Object} specifiersProse the prose so far
+     * @param {{histogram: Map<string, number>, atomic: string,
+     * outer: string, inner: string}} specifiersProse the prose so far
      * @param {Declarator} declarator the declarator
      * @param {DeclarationContext} kind the context
      * @returns {string} the prose paragraph
@@ -167,6 +182,12 @@ export class Explainer {
             }
         }
 
+        // TODO: add regression testing
+        if (histo.has('constexpr')
+            && !Explainer.isExplicitlyConst(declarator, histo.has('const'))) {
+            this.showDiagnostic('constexpr-implicit-const');
+        }
+
         const declaratorProse = this.declaratorToProse(declarator, kind);
         let result = declaratorProse.leadingIdentifier.length ?
             'Declare ' + declaratorProse.leadingIdentifier + ' ' : ' ';
@@ -179,10 +200,46 @@ export class Explainer {
     }
 
     /**
+     * Returns whether the declarator is explicitly marked `const`.
+     * This happens in cases such as `const int`, `int * const`,
+     * `const int array[][]`, etc.
+     * @param {Declarator} declarator the declarator
+     * @param {boolean} outerConst `true` if an outer `const` is present
+     * @returns {boolean} `true` iff the declarator is explicitly const.
+     */
+    static isExplicitlyConst(declarator, outerConst) {
+        declarator = Explainer.withoutTrailing(declarator, d => d.typ === '[]');
+
+        if (declarator.length === 1 && declarator[0].typ === 'id') {
+            return outerConst;
+        }
+        const last = declarator[declarator.length - 1];
+        if (last.typ === '*') {
+            return last.qualifiers && last.qualifiers.includes('const');
+        }
+        return false;
+    }
+
+    /**
+     * Returns copy with all consecutive trailing elements that satisfy
+     * a given predicate removed.
+     * @param {Array} arr
+     * @param {any} predicate
+     * @returns {Array}
+     */
+    static withoutTrailing(arr, predicate) {
+        let end = arr.length;
+        while (end > 0 && predicate(arr[end - 1])) {
+            end--;
+        }
+        return arr.copyWithin(end, arr.length);
+    }
+
+    /**
      * Converts a declaration specifier sequence to a prose object.
      * @param {DeclarationSpecifier[]} specifiers the specifiers
      * @param {DeclarationContext} kind the context
-     * @returns {{histogram: Map<string, number>, atomic: (string|string),
+     * @returns {{histogram: Map<string, number>, atomic: string,
      * outer: string, inner: string}}
      */
     specifiersToProse(specifiers, kind) {
