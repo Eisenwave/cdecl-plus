@@ -182,7 +182,6 @@ export class Explainer {
             }
         }
 
-        // TODO: add regression testing
         if (histo.has('constexpr')
             && !Explainer.isExplicitlyConst(declarator, histo.has('const'))) {
             this.showDiagnostic('constexpr-implicit-const');
@@ -223,8 +222,8 @@ export class Explainer {
     /**
      * Returns copy with all consecutive trailing elements that satisfy
      * a given predicate removed.
-     * @param {Array} arr
-     * @param {any} predicate
+     * @param {Array} arr the array
+     * @param {any} predicate the predicate
      * @returns {Array}
      */
     static withoutTrailing(arr, predicate) {

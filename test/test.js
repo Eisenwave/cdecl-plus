@@ -181,18 +181,69 @@ describe('Examples', function () {
 
     code = 'signed bool';
     describe(code, function () {
+        const codeCopy = code;
         it('throws because "signed" and "bool" conflict', function () {
-            assert.throws(() => codeToProse(code),
+            assert.throws(() => codeToProse(codeCopy),
                 {message: 'Conflicting specifiers signed and bool'});
         });
     });
 
     code = 'constexpr const int *x';
     describe(code, function () {
-        const {paragraphs, _} = codeToProse(code);
+        const {paragraphs} = codeToProse(code);
         it('has correct prose', function () {
             const expected = ['Declare x as constexpr pointer to const int'];
             assert.deepEqual(paragraphs, expected);
+        });
+    });
+
+    code = 'constexpr int x';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['Declare x as constexpr int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has constexpr-implicit-const diagnostic', function() {
+            assert.deepEqual(diagnostics, ['constexpr-implicit-const']);
+        });
+    });
+
+    code = 'constexpr const int x';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['Declare x as constexpr const int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has no diagnostics', function() {
+            assert.equal(diagnostics.length, 0);
+        });
+    });
+
+    code = 'constexpr const int * const x';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['Declare x as constexpr const ' +
+            'pointer to const int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has no diagnostics', function() {
+            assert.equal(diagnostics.length, 0);
+        });
+    });
+
+    code = 'constexpr const int * x[][]';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['Declare x as constexpr array of arrays ' +
+            'of pointers to const int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has constexpr-implicit-const diagnostic', function() {
+            assert.deepEqual(diagnostics, ['constexpr-implicit-const']);
         });
     });
 });
