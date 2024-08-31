@@ -246,4 +246,16 @@ describe('Examples', function () {
             assert.deepEqual(diagnostics, ['constexpr-implicit-const']);
         });
     });
+
+    code = 'constexpr int f()';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['Declare f as constexpr function returning int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has no constexpr-implicit-const diagnostic', function() {
+            assert.ok(!diagnostics.includes('constexpr-implicit-const'));
+        });
+    });
 });

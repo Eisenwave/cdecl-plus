@@ -183,7 +183,8 @@ export class Explainer {
         }
 
         if (histo.has('constexpr')
-            && !Explainer.isExplicitlyConst(declarator, histo.has('const'))) {
+            && !Explainer.isExplicitlyConst(declarator, histo.has('const'))
+            && !Explainer.isFunction(declarator)) {
             this.showDiagnostic('constexpr-implicit-const');
         }
 
@@ -209,7 +210,8 @@ export class Explainer {
     static isExplicitlyConst(declarator, outerConst) {
         declarator = Explainer.withoutTrailing(declarator, d => d.typ === '[]');
 
-        if (declarator.length === 1 && declarator[0].typ === 'id') {
+        if (declarator.length === 0 ||
+            declarator.length === 1 && declarator[0].typ === 'id') {
             return outerConst;
         }
         const last = declarator[declarator.length - 1];
@@ -217,6 +219,16 @@ export class Explainer {
             return last.qualifiers && last.qualifiers.includes('const');
         }
         return false;
+    }
+
+    /**
+     * Returns `true` if the given declarator is a function declarator.
+     * @param {Declarator} declarator the declarator
+     * @returns {boolean}
+     */
+    static isFunction(declarator) {
+        return declarator.length !== 0
+            && declarator[declarator.length - 1].typ === '()';
     }
 
     /**
