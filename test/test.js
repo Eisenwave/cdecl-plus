@@ -186,4 +186,13 @@ describe('Examples', function () {
                 {message: 'Conflicting specifiers signed and bool'});
         });
     });
+
+    code = 'constexpr const int *x';
+    describe(code, function () {
+        const {paragraphs, _} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['Declare x as constexpr pointer to const int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+    });
 });
