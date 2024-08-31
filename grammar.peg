@@ -143,6 +143,7 @@ StorageClassSpecifier "storage-class-specifier"
   / "static"
   / ThreadLocalKeyword
   / "auto"
+  / "constexpr"
   / "register") !WordChar {
     return ["storage-class-specifier", it];
   }
@@ -383,6 +384,7 @@ Keyword "keyword"
   = "auto"
   / "break"
   / "case"
+  / "constexpr"
   / "char"
   / "const"
   / "continue"
