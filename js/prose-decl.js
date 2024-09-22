@@ -214,9 +214,9 @@ export class Explainer {
             declarator.length === 1 && declarator[0].typ === 'id') {
             return outerConst;
         }
-        const last = declarator[declarator.length - 1];
-        if (last.typ === '*') {
-            return last.qualifiers && last.qualifiers.includes('const');
+        const first = declarator[Number(declarator[0].typ === 'id')];
+        if (first.typ === '*') {
+            return first.qualifiers && first.qualifiers.includes('const');
         }
         return false;
     }

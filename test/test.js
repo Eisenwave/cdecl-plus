@@ -247,6 +247,30 @@ describe('Examples', function () {
         });
     });
 
+    code = 'constexpr int * const *';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['constexpr pointer to const pointer to int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has constexpr-implicit-const diagnostic', function() {
+            assert.deepEqual(diagnostics, ['constexpr-implicit-const']);
+        });
+    });
+
+    code = 'constexpr int ** const';
+    describe(code, function () {
+        const {paragraphs, diagnostics} = codeToProse(code);
+        it('has correct prose', function () {
+            const expected = ['constexpr const pointer to pointer to int'];
+            assert.deepEqual(paragraphs, expected);
+        });
+        it('has no constexpr-implicit-const diagnostic', function() {
+            assert.ok(!diagnostics.includes('constexpr-implicit-const'));
+        });
+    });
+
     code = 'constexpr int f()';
     describe(code, function () {
         const {paragraphs, diagnostics} = codeToProse(code);
