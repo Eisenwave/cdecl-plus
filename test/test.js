@@ -258,4 +258,20 @@ describe('Examples', function () {
             assert.ok(!diagnostics.includes('constexpr-implicit-const'));
         });
     });
+
+    code = 'void() const const';
+    describe(code, function () {
+        const diagnostics = codeToProse(code).diagnostics;
+        it('rejects duplicate qualifiers on function', function() {
+            assert.ok(diagnostics.includes('duplicate-function-qualifier'));
+        });
+    });
+
+    code = 'void * const const';
+    describe(code, function () {
+        const diagnostics = codeToProse(code).diagnostics;
+        it('rejects duplicate qualifiers on pointer', function() {
+            assert.ok(diagnostics.includes('duplicate-pointer-qualifier'));
+        });
+    });
 });

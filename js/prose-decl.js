@@ -364,6 +364,18 @@ export class Explainer {
     }
 
     /**
+     * Checks whether there are duplicate qualifiers in the given list
+     * @param {string[]} qualifiers
+     * @param {'function' | 'pointer'} context
+     */
+    checkForDuplicateQualifiers(qualifiers, context) {
+        const withoutDuplicates = new Set(qualifiers.map(q => q === '_Atomic' ? 'atomic' : q))
+        if (withoutDuplicates.size !== qualifiers.length) {
+            this.showDiagnostic(`duplicate-${context}-qualifier`);
+        }
+    }
+
+    /**
      * Throws if there is misuse of specifiers in the declaration specifier
      * sequence, depending on the provided kind of context.
      * @param {DeclarationSpecifier[]} specifiers the specifiers
@@ -508,6 +520,7 @@ export class Explainer {
                 break;
             }
             case '*': {
+                this.checkForDuplicateQualifiers(d.qualifiers, 'pointer');
                 const q = d.qualifiers
                     .sort(Explainer.compareSpecifiers)
                     .map(Explainer.remapSpecifierTextForReadability)
@@ -598,6 +611,7 @@ export class Explainer {
                     this.showDiagnostic('empty-function-parameters');
                 }
 
+                this.checkForDuplicateQualifiers(d.qualifiers, 'function');
                 let overrideFinal = d.qualifiers[d.qualifiers.length - 1];
                 if (!['override', 'final'].includes(overrideFinal)) {
                     overrideFinal = undefined;
